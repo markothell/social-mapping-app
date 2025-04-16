@@ -1,148 +1,95 @@
+// src/app/activity/[sessionId]/tags/page.tsx
 "use client";
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { activityService } from '@/core/services/activityService';
+import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import TagCreationForm from '@/components/TagCreationForm';
 import TagList from '@/components/TagList';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
 
-// Helper function for consistent params handling across the app
 function useParams<T>(params: T | Promise<T>): T {
   return params instanceof Promise ? use(params) : params;
 }
 
-export default function TagsPage({ params }: { params: { sessionId: string } | Promise<{ sessionId: string }> }) {
+export default function TagsPage({ 
+  params 
+}: { 
+  params: { sessionId: string } | Promise<{ sessionId: string }> 
+}) {
   const router = useRouter();
-  
-  // Properly unwrap params using React.use() for forward compatibility
   const unwrappedParams = useParams(params);
   const sessionId = unwrappedParams.sessionId;
   
-  const [activity, setActivity] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState({
-    isConnected: true,
-    error: null
-  });
-
+  
+  // Use the real-time activity hook
+  const {
+    activity,
+    loading,
+    isConnected,
+    connectionError,
+    addTag,
+    voteTag,
+    deleteTag,
+    changePhase
+  } = useRealTimeActivity(sessionId, user);
+  
+  // Load user data from localStorage
   useEffect(() => {
-    // Load activity data
-    const loadActivity = () => {
-      const activityData = activityService.getById(sessionId);
-      setActivity(activityData);
-      setLoading(false);
-    };
-
-    // Load user data from localStorage
-    const loadUser = () => {
-      if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
           setIsAdmin(parsedUser.id === 'admin' || localStorage.getItem('isAdmin') === 'true');
-        } else {
-          // Redirect back to entry if no user
+        } catch (error) {
+          console.error('Error parsing user data:', error);
           router.push(`/activity/${sessionId}`);
         }
+      } else {
+        // Redirect back to entry if no user
+        router.push(`/activity/${sessionId}`);
       }
-    };
-
-    loadActivity();
-    loadUser();
+    }
   }, [sessionId, router]);
-
-  // Function to add a new tag
+  
+  // Function to add a new tag with real-time updates
   const handleAddTag = (tagText: string) => {
     if (!activity || !user) return;
 
     const newTag = {
+      id: Math.random().toString(36).substring(2, 9),
       text: tagText,
       creatorId: user.id,
-      creatorName: user.name
+      creatorName: user.name,
+      votes: [],
+      comments: [],
+      commentCount: 0,
+      hasNewComments: false,
+      status: activity.settings.tagCreation?.enableVoting ? 'pending' : 'approved'
     };
 
-    // Update the activity with the new tag
-    const updatedActivity = activityService.update(activity.id, (currentActivity) => {
-      const tag = {
-        id: Math.random().toString(36).substring(2, 9),
-        text: tagText,
-        creatorId: user.id,
-        creatorName: user.name,
-        votes: [],
-        comments: [],
-        commentCount: 0,
-        hasNewComments: false,
-        status: activity.settings.tagCreation?.enableVoting ? 'pending' : 'approved'
-      };
-
-      currentActivity.tags.push(tag);
-      currentActivity.updatedAt = new Date();
-      return currentActivity;
-    });
-
-    if (updatedActivity) {
-      setActivity(updatedActivity);
-    }
+    // Use the real-time addTag function
+    addTag(newTag);
   };
 
-  // Function to vote for a tag
+  // Function to vote for a tag with real-time updates
   const handleVoteTag = (tagId: string) => {
-    if (!activity || !user) return;
-
-    const updatedActivity = activityService.update(activity.id, (currentActivity) => {
-      const tag = currentActivity.tags.find((t: any) => t.id === tagId);
-      if (!tag) return currentActivity;
-
-      // Check if user already voted
-      if (tag.votes.some((v: any) => v.userId === user.id)) {
-        // Remove the vote
-        tag.votes = tag.votes.filter((v: any) => v.userId !== user.id);
-      } else {
-        // Add the vote
-        tag.votes.push({
-          userId: user.id,
-          userName: user.name,
-          timestamp: new Date()
-        });
-
-        // Update tag status if vote threshold is reached
-        if (
-          currentActivity.settings.tagCreation?.enableVoting &&
-          tag.status === 'pending' &&
-          tag.votes.length >= currentActivity.settings.tagCreation.voteThreshold
-        ) {
-          tag.status = 'approved';
-        }
-      }
-
-      currentActivity.updatedAt = new Date();
-      return currentActivity;
-    });
-
-    if (updatedActivity) {
-      setActivity(updatedActivity);
-    }
+    // Use the real-time voteTag function
+    voteTag(tagId);
   };
 
-  // Function to delete a tag (admin only)
+  // Function to delete a tag with real-time updates
   const handleDeleteTag = (tagId: string) => {
     if (!activity || !isAdmin) return;
 
     if (window.confirm('Are you sure you want to delete this tag?')) {
-      const updatedActivity = activityService.update(activity.id, (currentActivity) => {
-        currentActivity.tags = currentActivity.tags.filter((t: any) => t.id !== tagId);
-        currentActivity.updatedAt = new Date();
-        return currentActivity;
-      });
-
-      if (updatedActivity) {
-        setActivity(updatedActivity);
-      }
+      // Use the real-time deleteTag function
+      deleteTag(tagId);
     }
   };
 
@@ -187,7 +134,12 @@ export default function TagsPage({ params }: { params: { sessionId: string } | P
           onDelete={handleDeleteTag}
         />
 
-        <ConnectionStatus status={connectionStatus} />
+        <ConnectionStatus 
+          status={{ 
+            isConnected: isConnected, 
+            error: connectionError 
+          }} 
+        />
 
         <div className="navigation-controls">
           <button
@@ -197,9 +149,15 @@ export default function TagsPage({ params }: { params: { sessionId: string } | P
             Back to Activity
           </button>
           
-          {/* Show a continue button for all users, not just admins */}
           <button
-            onClick={() => router.push(`/activity/${activity.id}/mapping`)}
+            onClick={() => {
+              // Use the real-time changePhase function if admin
+              if (isAdmin) {
+                changePhase('mapping');
+              }
+              
+              router.push(`/activity/${activity.id}/mapping`);
+            }}
             className="primary-button"
             disabled={!hasApprovedTags}
             title={!hasApprovedTags ? "You need at least one approved tag to continue" : ""}
@@ -208,7 +166,7 @@ export default function TagsPage({ params }: { params: { sessionId: string } | P
           </button>
         </div>
       </div>
-
+      
       <style jsx>{`
         .tags-page {
           max-width: 900px;

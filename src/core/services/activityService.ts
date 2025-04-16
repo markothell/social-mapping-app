@@ -89,15 +89,16 @@ export const activityService = {
     }
     
     this.saveAll(filteredActivities);
+    
+    // Add to deletion queue for sync
+    const deletionQueue = localStorage.getItem('deletion_queue') ? 
+      JSON.parse(localStorage.getItem('deletion_queue')) : [];
+    if (!deletionQueue.includes(id)) {
+      deletionQueue.push(id);
+      localStorage.setItem('deletion_queue', JSON.stringify(deletionQueue));
+    }
+    
     return true;
-  },
-  
-  complete(id: string): Activity | null {
-    return this.update(id, activity => {
-      activity.status = 'completed';
-      activity.updatedAt = new Date();
-      return activity;
-    });
   },
   
   addTag(activityId: string, tag: any): Activity | null {
@@ -176,18 +177,22 @@ export const activityService = {
     // Format for serialization
     const serialized = activities.map(activity => ({
       ...activity,
-      createdAt: activity.createdAt.toISOString(),
-      updatedAt: activity.updatedAt.toISOString(),
+      createdAt: activity.createdAt instanceof Date ? 
+        activity.createdAt.toISOString() : activity.createdAt,
+      updatedAt: activity.updatedAt instanceof Date ? 
+        activity.updatedAt.toISOString() : activity.updatedAt,
       // Convert dates in votes and comments to strings
       tags: activity.tags?.map(tag => ({
         ...tag,
         votes: tag.votes?.map(vote => ({
           ...vote,
-          timestamp: vote.timestamp instanceof Date ? vote.timestamp.toISOString() : vote.timestamp
+          timestamp: vote.timestamp instanceof Date ? 
+            vote.timestamp.toISOString() : vote.timestamp
         })),
         comments: tag.comments?.map(comment => ({
           ...comment,
-          timestamp: comment.timestamp instanceof Date ? comment.timestamp.toISOString() : comment.timestamp
+          timestamp: comment.timestamp instanceof Date ? 
+            comment.timestamp.toISOString() : comment.timestamp
         }))
       }))
     }));

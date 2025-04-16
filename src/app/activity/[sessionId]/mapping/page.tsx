@@ -1,76 +1,63 @@
+// src/app/activity/[sessionId]/mapping/page.tsx
 "use client";
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { activityService } from '@/core/services/activityService';
+import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import MappingGrid from '@/components/MappingGrid';
 import TagSelectionPanel from '@/components/TagSelectionPanel';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
 
-// Helper function for handling Promise-like params with Next.js App Router
 function useParams<T>(params: T | Promise<T>): T {
   return params instanceof Promise ? use(params) : params;
 }
 
-export default function MappingPage({ params }: { params: { sessionId: string } | Promise<{ sessionId: string }> }) {
+export default function MappingPage({ 
+  params 
+}: { 
+  params: { sessionId: string } | Promise<{ sessionId: string }> 
+}) {
   const router = useRouter();
-  
-  // Properly handle potentially Promise-based params from App Router
   const unwrappedParams = useParams(params);
   const sessionId = unwrappedParams.sessionId;
   
-  const [activity, setActivity] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [mappedTags, setMappedTags] = useState<string[]>([]);
   const [userMappings, setUserMappings] = useState<any>({});
-  const [connectionStatus, setConnectionStatus] = useState({
-    isConnected: true,
-    error: null
-  });
-  const [isMappingComplete, setIsMappingComplete] = useState(false);
-
+  
+  // Use the real-time activity hook
+  const {
+    activity,
+    loading,
+    isConnected,
+    connectionError,
+    updateMapping,
+    changePhase
+  } = useRealTimeActivity(sessionId, user);
+  
+  // Load user data from localStorage
   useEffect(() => {
-    // Load activity data
-    const loadActivity = () => {
-      const activityData = activityService.getById(sessionId);
-      if (activityData) {
-        setActivity(activityData);
-        setLoading(false);
-      } else {
-        // Handle not found
-        setLoading(false);
-      }
-    };
-
-    // Load user data from localStorage
-    const loadUser = () => {
-      if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            setIsAdmin(parsedUser.id === 'admin' || localStorage.getItem('isAdmin') === 'true');
-          } catch (error) {
-            console.error('Error parsing user data:', error);
-            // Redirect back to entry if user data is invalid
-            router.push(`/activity/${sessionId}`);
-          }
-        } else {
-          // Redirect back to entry if no user
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setIsAdmin(parsedUser.id === 'admin' || localStorage.getItem('isAdmin') === 'true');
+        } catch (error) {
+          console.error('Error parsing user data:', error);
           router.push(`/activity/${sessionId}`);
         }
+      } else {
+        // Redirect back to entry if no user
+        router.push(`/activity/${sessionId}`);
       }
-    };
-
-    loadActivity();
-    loadUser();
+    }
   }, [sessionId, router]);
-
+  
   // Load user's existing mappings
   useEffect(() => {
     if (activity && user) {
@@ -100,15 +87,14 @@ export default function MappingPage({ params }: { params: { sessionId: string } 
         
         setUserMappings(mappings);
         setMappedTags(mappedTagIds);
-        setIsMappingComplete(userMapping.isComplete || false);
       }
     }
   }, [activity, user]);
-
+  
   const handleTagSelect = (tagId: string) => {
     setSelectedTag(tagId);
   };
-
+  
   const handleTagPosition = (tagId: string, x: number, y: number, annotation?: string) => {
     if (!activity || !user) return;
     
@@ -117,92 +103,58 @@ export default function MappingPage({ params }: { params: { sessionId: string } 
     const tagText = approvedTags.find(tag => tag.id === tagId)?.text || '';
     
     // Update local state
-    setUserMappings((prev: any) => ({
-      ...prev,
+    const newUserMappings = {
+      ...userMappings,
       [tagId]: { tagId, x, y, annotation, text: tagText }
-    }));
+    };
     
-    setMappedTags((prev: string[]) => {
-      if (!prev.includes(tagId)) {
-        return [...prev, tagId];
-      }
-      return prev;
-    });
+    setUserMappings(newUserMappings);
+    
+    if (!mappedTags.includes(tagId)) {
+      setMappedTags([...mappedTags, tagId]);
+    }
     
     // Clear selected tag
     setSelectedTag(null);
     
-    // Update activity with new position
-    activityService.update(activity.id, (currentActivity) => {
-      let userMapping = currentActivity.mappings.find((m: any) => m.userId === user.id);
-      
-      if (!userMapping) {
-        userMapping = {
-          userId: user.id,
-          userName: user.name,
-          positions: [],
-          isComplete: false
-        };
-        
-        currentActivity.mappings.push(userMapping);
-      }
-      
-      // Update or add position
-      const existingIndex = userMapping.positions.findIndex((p: any) => p.tagId === tagId);
-      
-      if (existingIndex !== -1) {
-        userMapping.positions[existingIndex] = { tagId, x, y, annotation, text: tagText };
-      } else {
-        userMapping.positions.push({ tagId, x, y, annotation, text: tagText });
-      }
-      
-      currentActivity.updatedAt = new Date();
-      return currentActivity;
-    });
+    // Update the activity with new position using real-time updates
+    const positions = Object.values(newUserMappings);
+    updateMapping(positions);
   };
-
+  
   const handleCompleteMappings = () => {
     if (!activity || !user) return;
     
-    // Update activity marking user's mapping as complete
-    const updatedActivity = activityService.update(activity.id, (currentActivity) => {
-      const userMapping = currentActivity.mappings.find((m: any) => m.userId === user.id);
-      
-      if (userMapping) {
-        userMapping.isComplete = true;
-      }
-      
-      currentActivity.updatedAt = new Date();
-      return currentActivity;
-    });
+    // Convert mappings to array
+    const positions = Object.values(userMappings);
     
-    if (updatedActivity) {
-      setActivity(updatedActivity);
-      setIsMappingComplete(true);
-      
-      // If admin, redirect to results
-      if (isAdmin) {
-        router.push(`/activity/${activity.id}/mapping-results`);
-      } else {
-        // Show completion message
-        alert('Your mappings have been submitted successfully!');
-      }
+    // Mark as complete
+    const updatedPositions = positions.map(pos => ({
+      ...pos,
+      isComplete: true
+    }));
+    
+    // Update with real-time updates
+    updateMapping(updatedPositions);
+    
+    // If admin, redirect to results and change phase
+    if (isAdmin) {
+      changePhase('mapping-results');
+      router.push(`/activity/${activity.id}/mapping-results`);
+    } else {
+      // Show completion message
+      alert('Your mappings have been submitted successfully!');
     }
   };
-
+  
   if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading mapping interface...</p>
-      </div>
-    );
+    return <div className="loading-container">Loading mapping interface...</div>;
   }
-
+  
   if (!activity) {
     return <ActivityNotFound />;
   }
-
+  
   const approvedTags = activity.tags.filter((tag: any) => tag.status === 'approved');
   const mappingSettings = activity.settings.mapping || {
     xAxisLabel: 'Knowledge',
@@ -215,14 +167,10 @@ export default function MappingPage({ params }: { params: { sessionId: string } 
     enableAnnotations: true,
     maxAnnotationLength: 280
   };
-
+  
   const completionPercentage = approvedTags.length > 0 
     ? Math.round((mappedTags.length / approvedTags.length) * 100) 
     : 0;
-
-  const currentlySelectedTag = selectedTag 
-    ? approvedTags.find(t => t.id === selectedTag) || null 
-    : null;
 
   return (
     <div className="mapping-page">
@@ -246,11 +194,6 @@ export default function MappingPage({ params }: { params: { sessionId: string } 
               ></div>
             </div>
             <p>{mappedTags.length} of {approvedTags.length} tags mapped ({completionPercentage}%)</p>
-            {isMappingComplete && (
-              <div className="completion-badge">
-                ✓ Mapping completed
-              </div>
-            )}
           </div>
         </div>
         
@@ -264,13 +207,18 @@ export default function MappingPage({ params }: { params: { sessionId: string } 
           
           <MappingGrid 
             settings={mappingSettings}
-            selectedTag={currentlySelectedTag}
+            selectedTag={selectedTag ? approvedTags.find(t => t.id === selectedTag) : null}
             userMappings={userMappings}
             onPositionTag={handleTagPosition}
           />
         </div>
 
-        <ConnectionStatus status={connectionStatus} />
+        <ConnectionStatus 
+          status={{ 
+            isConnected: isConnected, 
+            error: connectionError 
+          }} 
+        />
 
         <div className="navigation-controls">
           <button
@@ -290,7 +238,7 @@ export default function MappingPage({ params }: { params: { sessionId: string } 
           <button
             onClick={handleCompleteMappings}
             className="primary-button"
-            disabled={mappedTags.length === 0 || isMappingComplete}
+            disabled={mappedTags.length === 0}
           >
             {isAdmin ? 'Complete and View Results' : 'Submit My Mappings'}
           </button>

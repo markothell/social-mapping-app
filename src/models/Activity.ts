@@ -107,6 +107,11 @@ export interface Activity {
 export function createDefaultActivity(type: 'mapping' | 'ranking', title: string): Activity {
   const now = new Date();
   
+  // More reliable unique ID generation
+  const timestamp = now.getTime().toString(36);
+  const random = Math.random().toString(36).substring(2, 7);
+  const id = `${timestamp}_${random}`;
+  
   const commonSettings = {
     entryView: {
       title: title || 'New Activity',
@@ -144,7 +149,7 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
   };
   
   return {
-    id: Math.random().toString(36).substring(2, 9),
+    id,
     type,
     settings: type === 'mapping' ? mappingSettings : rankingSettings,
     createdAt: now,

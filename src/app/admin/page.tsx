@@ -1,40 +1,46 @@
 // src/app/admin/page.tsx
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { activityService } from '@/core/services/activityService';
 import ActivityCard from '@/components/ActivityCard';
-import styles from './admin.module.css';
+import { hybridActivityService } from '@/core/services/hybridActivityService';
+import ConnectionStatus from '@/components/ConnectionStatus';
+import { useWebSocket } from '@/core/services/websocketService';
+import { useActivities } from '@/core/hooks/useActivities';
 
 export default function AdminDashboardPage() {
-  const [activities, setActivities] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const router = useRouter();
-
-  useEffect(() => {
-    const loadActivities = () => {
-      let loadedActivities;
-      
-      switch (activeFilter) {
-        case 'active':
-          loadedActivities = activityService.getActive();
-          break;
-        case 'completed':
-          loadedActivities = activityService.getCompleted();
-          break;
-        default:
-          loadedActivities = activityService.getAll();
-      }
-      
-      setActivities(loadedActivities);
-    };
-    
-    loadActivities();
-  }, [activeFilter]);
+  const { isConnected, error: connectionError } = useWebSocket();
+  
+  // Use our new hook
+  const { activities, loading, error, refresh } = useActivities(activeFilter as any);
 
   const handleCreateActivity = () => {
     router.push('/admin/create');
+  };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    if (window.confirm('Are you sure you want to delete this activity?')) {
+      const success = await hybridActivityService.delete(activityId);
+      if (success) {
+        refresh(); // Refresh the list
+      } else {
+        alert('Failed to delete activity. Please try again.');
+      }
+    }
+  };
+  
+  const handleCompleteActivity = async (activityId: string) => {
+    if (window.confirm('Are you sure you want to mark this activity as completed?')) {
+      const updatedActivity = await hybridActivityService.complete(activityId);
+      if (updatedActivity) {
+        refresh(); // Refresh the list
+      } else {
+        alert('Failed to complete activity. Please try again.');
+      }
+    }
   };
   
   return (
@@ -70,7 +76,11 @@ export default function AdminDashboardPage() {
         </button>
       </div>
       
-      {activities.length === 0 ? (
+      {loading ? (
+        <div className="loading-container">Loading activities...</div>
+      ) : error ? (
+        <div className="error-message">{error}</div>
+      ) : activities.length === 0 ? (
         <div className="no-activities">
           <p>No activities found. Click "Create New Activity" to get started.</p>
         </div>
@@ -81,27 +91,19 @@ export default function AdminDashboardPage() {
               key={activity.id} 
               activity={activity} 
               onNavigate={() => router.push(`/activity/${activity.id}`)}
-              onDelete={() => {
-                if (window.confirm('Are you sure you want to delete this activity?')) {
-                  activityService.delete(activity.id);
-                  setActivities(activities.filter(a => a.id !== activity.id));
-                }
-              }}
-              onComplete={() => {
-                if (window.confirm('Are you sure you want to mark this activity as completed?')) {
-                  activityService.complete(activity.id);
-                  // Refresh the activities list
-                  setActivities(activities.map(a => 
-                    a.id === activity.id 
-                      ? { ...a, status: 'completed' } 
-                      : a
-                  ));
-                }
-              }}
+              onDelete={() => handleDeleteActivity(activity.id)}
+              onComplete={() => handleCompleteActivity(activity.id)}
             />
           ))}
         </div>
       )}
+
+      <ConnectionStatus 
+        status={{ 
+          isConnected, 
+          error: connectionError 
+        }} 
+      />
 
       <style jsx>{`
         .admin-dashboard {
