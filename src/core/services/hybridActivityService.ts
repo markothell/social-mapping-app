@@ -464,6 +464,22 @@ export const hybridActivityService = {
    * Add a tag to an activity
    */
   async addTag(activityId: string, tag: any): Promise<Activity | null> {
+    console.log(`hybridActivityService: Adding tag ${tag.id} to activity ${activityId}`);
+    
+    // Get current activity state
+    const currentActivity = await this.getById(activityId);
+    if (!currentActivity) {
+      console.warn(`Cannot add tag to activity ${activityId}: Activity not found locally`);
+      return null;
+    }
+    
+    // Check if tag already exists
+    if (currentActivity.tags.some(t => t.id === tag.id)) {
+      console.warn(`Tag ${tag.id} already exists in activity ${activityId}, skipping addition`);
+      return currentActivity; // Return the activity without modification
+    }
+    
+    // Proceed with tag addition
     return this.update(activityId, activity => {
       const newTag = {
         id: tag.id || Math.random().toString(36).substring(2, 9),

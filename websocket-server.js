@@ -239,13 +239,27 @@ io.on('connection', (socket) => {
       console.error(`Error handling delete_activity event for ${data.activityId}:`, error);
     }
   });
-  
+
   // Handle tag updates
   socket.on('add_tag', async (data) => {
-  try {
-    // First, save to database
-    const activity = await Activity.findOne({ id: data.activityId });
-    if (activity) {
+    try {
+      console.log(`Processing add_tag event for ${data.activityId}, tag ${data.tag.id} from socket ${socket.id}`);
+      
+      // First, save to database
+      const activity = await Activity.findOne({ id: data.activityId });
+      if (!activity) {
+        console.log(`Activity ${data.activityId} not found for tag addition`);
+        return;
+      }
+      
+      // Check if tag already exists
+      const existingTag = activity.tags.find(t => t.id === data.tag.id);
+      if (existingTag) {
+        console.log(`Tag ${data.tag.id} already exists in activity ${data.activityId}, skipping addition`);
+        return;
+      }
+      
+      // Add the tag (with complete tag object)
       activity.tags.push({
         ...data.tag,
         votes: data.tag.votes || [],
@@ -255,12 +269,17 @@ io.on('connection', (socket) => {
         status: activity.settings.tagCreation?.enableVoting ? 'pending' : 'approved',
         createdAt: new Date()
       });
+      
       activity.updatedAt = new Date();
       await activity.save();
-    }
-    
-    // Then, broadcast to all clients in the room except sender
-    socket.to(data.activityId).emit('tag_added', data);
+      console.log(`Tag ${data.tag.id} saved to database`);
+      
+      // IMPORTANT: Only broadcast tag_added, NOT activity_updated
+      // This prevents the double event problem
+      socket.to(data.activityId).emit('tag_added', data);
+      console.log(`tag_added event broadcast to room ${data.activityId}`);
+      
+      // DO NOT emit activity_updated here!
     } catch (error) {
       console.error('Error handling add_tag event:', error);
     }

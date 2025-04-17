@@ -107,10 +107,25 @@ export function useRealTimeActivity(activityId: string, user: any) {
     const handleTagAdded = (event: CustomEvent) => {
       const detail = event.detail;
       if (detail.activityId === activityId) {
-        // Refresh the activity data to get updated tags
-        hybridActivityService.getById(activityId).then(activity => {
-          if (activity) {
-            setActivity(activity);
+        console.log(`Received tag_added event for activity ${activityId}, tag ${detail.tagId}`);
+        
+        // Check if we already have this tag before refreshing
+        if (activity && activity.tags.some(tag => tag.id === detail.tagId)) {
+          console.log(`Tag ${detail.tagId} already exists locally, skipping refresh`);
+          return;
+        }
+        
+        // Refresh the activity data
+        hybridActivityService.getById(activityId).then(updatedActivity => {
+          if (updatedActivity) {
+            // Before updating state, check for duplicates
+            const uniqueTags = [...new Map(updatedActivity.tags.map(tag => [tag.id, tag])).values()];
+            if (uniqueTags.length !== updatedActivity.tags.length) {
+              console.warn(`Duplicate tags detected in activity ${activityId}, removing duplicates`);
+              updatedActivity.tags = uniqueTags;
+            }
+            
+            setActivity(updatedActivity);
           }
         });
       }
@@ -197,10 +212,12 @@ export function useRealTimeActivity(activityId: string, user: any) {
     if (!activity || !user) return null;
     
     try {
-      // Generate a tag ID if not provided
+      // Generate a unique tag ID with more entropy
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 10);
       const tagWithId = {
         ...tag,
-        id: tag.id || `${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`
+        id: tag.id || `tag_${timestamp}_${random}`
       };
       
       // First update locally/in database
@@ -224,7 +241,7 @@ export function useRealTimeActivity(activityId: string, user: any) {
       return null;
     }
   }, [activity, activityId, isConnected, offline, sendMessage, user]);
-  
+    
   // Handler function for voting on a tag
   const voteTag = useCallback(async (tagId: string) => {
     if (!activity || !user) return null;
@@ -266,9 +283,21 @@ export function useRealTimeActivity(activityId: string, user: any) {
   
   // Handler function for deleting a tag
   const deleteTag = useCallback(async (tagId: string) => {
-    if (!activity) return null;
+    if (!activity) {
+      console.error('Cannot delete tag: No active activity');
+      return null;
+    }
     
     try {
+      // Ensure the tag exists in the activity
+      const tagExists = activity.tags.some(tag => tag.id === tagId);
+      if (!tagExists) {
+        console.warn(`Tag ${tagId} not found in activity ${activityId}`);
+        return null;
+      }
+      
+      console.log(`Deleting tag ${tagId} from activity ${activityId}`);
+      
       // First update locally/in database
       const updatedActivity = await hybridActivityService.deleteTag(
         activityId, 
@@ -276,20 +305,24 @@ export function useRealTimeActivity(activityId: string, user: any) {
       );
       
       if (updatedActivity) {
+        // Update local state immediately for responsive UI
         setActivity(updatedActivity);
+        
+        // Then emit to other clients if online
+        if (isConnected && !offline) {
+          sendMessage('delete_tag', {
+            activityId,
+            tagId
+          });
+        }
+        
+        return updatedActivity;
+      } else {
+        console.error(`Failed to delete tag ${tagId} - hybridActivityService.deleteTag returned null`);
+        return null;
       }
-      
-      // Then emit to other clients if online
-      if (isConnected && !offline) {
-        sendMessage('delete_tag', {
-          activityId,
-          tagId
-        });
-      }
-      
-      return updatedActivity;
     } catch (error) {
-      console.error('Error deleting tag:', error);
+      console.error(`Error deleting tag ${tagId}:`, error);
       return null;
     }
   }, [activity, activityId, isConnected, offline, sendMessage]);

@@ -61,8 +61,12 @@ export default function TagsPage({
   const handleAddTag = (tagText: string) => {
     if (!activity || !user) return;
 
+    // Generate unique ID with timestamp for tracking
+    const tagId = `tag_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+    console.log(`Creating new tag with ID: ${tagId}`);
+
     const newTag = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: tagId,
       text: tagText,
       creatorId: user.id,
       creatorName: user.name,
@@ -73,7 +77,7 @@ export default function TagsPage({
       status: activity.settings.tagCreation?.enableVoting ? 'pending' : 'approved'
     };
 
-    // Use the real-time addTag function
+    // Track tag addition
     addTag(newTag);
   };
 
@@ -85,10 +89,35 @@ export default function TagsPage({
 
   // Function to delete a tag with real-time updates
   const handleDeleteTag = (tagId: string) => {
-    if (!activity || !isAdmin) return;
-
+    if (!activity) {
+      console.error("Cannot delete tag: activity is null");
+      return;
+    }
+    
+    if (!user) {
+      console.error("Cannot delete tag: user is not authenticated");
+      return;
+    }
+    
+    // Log for debugging
+    console.log(`Attempting to delete tag ${tagId} from activity ${activity.id}`);
+    
+    // Check if user has permission (admin or tag creator)
+    const tag = activity.tags.find(t => t.id === tagId);
+    if (!tag) {
+      console.error(`Tag ${tagId} not found in activity ${activity.id}`);
+      return;
+    }
+    
+    const isCreator = tag.creatorId === user.id;
+    if (!isAdmin && !isCreator) {
+      console.error(`User ${user.id} does not have permission to delete tag ${tagId}`);
+      return;
+    }
+    
     if (window.confirm('Are you sure you want to delete this tag?')) {
       // Use the real-time deleteTag function
+      console.log(`Confirmed deletion of tag ${tagId}`);
       deleteTag(tagId);
     }
   };

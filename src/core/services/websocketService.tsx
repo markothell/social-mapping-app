@@ -129,12 +129,30 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       socketInstance.on('activity_updated', async (data) => {
         console.log(`Received activity_updated for ${data.activityId}`);
         
-        // Fetch the updated activity from MongoDB
         try {
-          const activity = await hybridActivityService.getById(data.activityId);
+          // Before fetching, get current tags to check for duplications later
+          const currentActivity = await hybridActivityService.getById(data.activityId);
+          const currentTagIds = currentActivity?.tags.map(t => t.id) || [];
           
-          // Refresh UI if needed
-          if (typeof window !== 'undefined') {
+          // Fetch the updated activity
+          const updatedActivity = await hybridActivityService.getById(data.activityId);
+          if (updatedActivity) {
+            // Check for duplicate tags
+            const tagIds = updatedActivity.tags.map(t => t.id);
+            const uniqueTagIds = [...new Set(tagIds)];
+            
+            if (tagIds.length !== uniqueTagIds.length) {
+              console.warn(`Found duplicate tags in activity ${data.activityId}, fixing`);
+              // Fix duplicates by keeping only one copy of each tag
+              updatedActivity.tags = updatedActivity.tags.filter((tag, index) => {
+                return tagIds.indexOf(tag.id) === index;
+              });
+              
+              // Update the activity with de-duplicated tags
+              await hybridActivityService.update(data.activityId, () => updatedActivity);
+            }
+            
+            // Trigger UI update
             window.dispatchEvent(new CustomEvent('activity_updated', { 
               detail: { activityId: data.activityId } 
             }));
@@ -146,18 +164,37 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       
       socketInstance.on('tag_added', async (data) => {
         try {
-          const activity = await hybridActivityService.getById(data.activityId);
-          if (!activity) return;
+          console.log(`Received tag_added for activity ${data.activityId}, tag ${data.tag.id}`);
           
-          // Only update locally if we don't have this tag already
-          if (!activity.tags.some(tag => tag.id === data.tag.id)) {
-            await hybridActivityService.addTag(data.activityId, data.tag);
-            
-            // Trigger UI update
-            window.dispatchEvent(new CustomEvent('tag_added', { 
-              detail: { activityId: data.activityId, tagId: data.tag.id } 
-            }));
+          // Skip fetching from MongoDB - directly add the tag to local state
+          const currentActivity = await hybridActivityService.getById(data.activityId);
+          if (!currentActivity) {
+            console.warn(`Activity ${data.activityId} not found locally`);
+            return;
           }
+          
+          // Check if tag already exists locally
+          if (currentActivity.tags.some(t => t.id === data.tag.id)) {
+            console.log(`Tag ${data.tag.id} already exists locally in activity ${data.activityId}, skipping`);
+            return;
+          }
+          
+          // Add tag directly to local activity
+          await hybridActivityService.update(data.activityId, (activity) => {
+            // Ensure we don't add the tag if it somehow got added
+            if (!activity.tags.some(t => t.id === data.tag.id)) {
+              activity.tags.push(data.tag);
+            }
+            return activity;
+          });
+          
+          // Trigger UI update with custom event
+          window.dispatchEvent(new CustomEvent('tag_added', { 
+            detail: { 
+              activityId: data.activityId, 
+              tagId: data.tag.id 
+            } 
+          }));
         } catch (error) {
           console.error('Error handling tag_added event:', error);
         }
@@ -392,14 +429,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       });
     }
     
-    // Use functional updates to avoid dependency on state variables
-    // This prevents infinite re-renders
-    setCurrentActivity(prev => {
-      // Only set to null if it hasn't already been set to null
-      return prev !== null ? null : prev;
-    });
-  }, [isConnected, offline]); // Remove currentActivity and currentUser from dependencies
-    
+    // Avoid calling setState inside a setState callback
+    const activityId = currentActivity; // Capture current value
+    if (activityId !== null) {
+      setCurrentActivity(null);
+    }
+    setCurrentUser(null); 
+  }, [isConnected, offline, currentActivity, currentUser]);
+  
   // Function to send a message
   const sendMessage = (event: string, data: any) => {
     if (!offline && isConnected && socketRef.current) {

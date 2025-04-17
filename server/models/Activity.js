@@ -83,7 +83,7 @@ const settingsSchema = new Schema({
   tagCreation: {
     instruction: String,
     enableVoting: { type: Boolean, default: true },
-    voteThreshold: { type: Number, default: 2 }
+    voteThreshold: { type: Number, default: 1 }
   },
   mapping: {
     xAxisLabel: String,

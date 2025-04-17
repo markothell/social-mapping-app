@@ -120,7 +120,7 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
     tagCreation: {
       instruction: 'Add tags for the activity',
       enableVoting: true,
-      voteThreshold: 2
+      voteThreshold: 1
     }
   };
   

@@ -1,3 +1,4 @@
+// src/components/TagList.tsx
 "use client";
 
 import { useState } from 'react';
@@ -49,8 +50,13 @@ export default function TagList({
     );
   }
 
+  // Ensure no duplicate tags by ID
+  const uniqueTags = Array.from(
+    new Map(tags.map(tag => [tag.id, tag])).values()
+  );
+
   // Filter tags by status
-  const filteredTags = tags.filter(tag => {
+  const filteredTags = uniqueTags.filter(tag => {
     if (filter === 'all') return true;
     return tag.status === filter;
   });
@@ -70,11 +76,24 @@ export default function TagList({
     return tag.votes.some(vote => vote.userId === currentUser.id);
   };
 
-  const handleDeleteTag = (tagId: string, event: React.MouseEvent) => {
-    // Prevent event bubbling
-    event.stopPropagation();
+  // Check if user can vote on this tag
+  const canUserVote = (tag: Tag) => {
+    if (!currentUser) return false;
     
-    // Call the parent component's delete handler
+    // User cannot vote on their own tags
+    if (tag.creatorId === currentUser.id) return false;
+    
+    return true;
+  };
+
+  // Fixed delete handler - stops propagation and calls the parent's onDelete
+  const handleDeleteTag = (tagId: string, event: React.MouseEvent) => {
+    // Explicitly stop propagation
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Delete button clicked for tag:', tagId);
+    
+    // Call the parent delete handler directly
     onDelete(tagId);
   };
 
@@ -89,7 +108,7 @@ export default function TagList({
   return (
     <div className="tag-list-container">
       <div className="filter-controls">
-        <h2>Tags ({tags.length})</h2>
+        <h2>Tags ({uniqueTags.length})</h2>
         <div className="filter-buttons">
           <button
             onClick={() => setFilter('all')}
@@ -138,7 +157,7 @@ export default function TagList({
                 </div>
               </div>
               <div className="tag-actions">
-                {votingEnabled && currentUser && (
+                {votingEnabled && currentUser && canUserVote(tag) ? (
                   <button
                     onClick={(e) => handleVoteTag(tag.id, e)}
                     className={`vote-button ${hasUserVoted(tag) ? 'voted' : ''}`}
@@ -146,15 +165,12 @@ export default function TagList({
                     {hasUserVoted(tag) ? 'Unvote' : 'Vote'}
                     <span className="vote-count">{tag.votes.length}</span>
                   </button>
+                ) : tag.creatorId === currentUser?.id && (
+                  <span className="creator-note">Your tag</span>
                 )}
                 {(isAdmin || (currentUser && tag.creatorId === currentUser.id)) && (
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Delete button clicked for tag:', tag.id);
-                      onDelete(tag.id);
-                    }}
+                    onClick={(e) => handleDeleteTag(tag.id, e)}
                     className="delete-button"
                   >
                     Delete
@@ -282,6 +298,13 @@ export default function TagList({
           border-radius: 50%;
           font-size: 0.8rem;
           font-weight: 500;
+        }
+        
+        .creator-note {
+          font-size: 0.9rem;
+          color: #5f6368;
+          font-style: italic;
+          align-self: center;
         }
         
         .delete-button {
