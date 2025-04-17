@@ -349,6 +349,10 @@ io.on('connection', (socket) => {
         
         if (userMappingIndex >= 0) {
           activity.mappings[userMappingIndex].positions = data.positions;
+          // Set isComplete flag if provided
+          if (data.isComplete !== undefined) {
+            activity.mappings[userMappingIndex].isComplete = data.isComplete;
+          }
         } else {
           // Get user name from participants
           const participant = activity.participants.find(p => p.id === data.userId);
@@ -358,7 +362,7 @@ io.on('connection', (socket) => {
             userId: data.userId,
             userName,
             positions: data.positions,
-            isComplete: false
+            isComplete: data.isComplete || false // Use provided isComplete or default to false
           });
         }
         

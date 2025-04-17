@@ -328,7 +328,7 @@ export function useRealTimeActivity(activityId: string, user: any) {
   }, [activity, activityId, isConnected, offline, sendMessage]);
   
   // Handler function for updating mapping
-  const updateMapping = useCallback(async (positions: any[]) => {
+  const updateMapping = useCallback(async (positions: any[], isComplete: boolean = false) => {
     if (!activity || !user) return null;
     
     try {
@@ -338,12 +338,14 @@ export function useRealTimeActivity(activityId: string, user: any) {
         
         if (userMapping) {
           userMapping.positions = positions;
+          // Set isComplete flag based on the parameter
+          userMapping.isComplete = isComplete;
         } else {
           current.mappings.push({
             userId: user.id,
             userName: user.name,
             positions,
-            isComplete: false
+            isComplete: isComplete // Set initial isComplete value
           });
         }
         
@@ -360,7 +362,8 @@ export function useRealTimeActivity(activityId: string, user: any) {
         sendMessage('update_mapping', {
           activityId,
           userId: user.id,
-          positions
+          positions,
+          isComplete // Include isComplete flag in the message
         });
       }
       

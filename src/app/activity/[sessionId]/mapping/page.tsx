@@ -135,7 +135,9 @@ export default function MappingPage({
     }));
     
     // Update with real-time updates
-    updateMapping(updatedPositions);
+    // Important: Create a properly structured mapping update
+    // with the isComplete flag set at the mapping level, not just on positions
+    updateMapping(positions, true); // Pass true to mark the entire mapping as complete
     
     // If admin, redirect to results and change phase
     if (isAdmin) {
