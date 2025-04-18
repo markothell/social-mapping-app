@@ -174,10 +174,10 @@ export const mongoDbService = {
     }
   },
   
-  // Update the updateActivity method in mongoDbService.ts
-  async updateActivity(id: string, updates: any) {
+  // Update the updateActivity method in mongoDbService.ts with retry logic
+  async updateActivity(id: string, updates: any, retryCount = 0, maxRetries = 3) {
     try {
-      console.log(`MongoDB Service: Updating activity ${id} directly`);
+      console.log(`MongoDB Service: Updating activity ${id} directly (attempt ${retryCount + 1}/${maxRetries + 1})`);
       
       // Transform dates to strings to avoid transmission issues
       const sanitizedUpdates = structureSanitizeForMongoDB(updates);
@@ -194,7 +194,33 @@ export const mongoDbService = {
         }
       });
       
-      // Send update request directly without checking first
+      // For participant updates, make sure we're handling them correctly
+      if (filteredUpdates['participants']) {
+        // Ensure each participant has a name and isConnected property
+        filteredUpdates['participants'] = filteredUpdates['participants'].map(p => ({
+          ...p,
+          name: p.name || p.userName || `User-${p.id.substring(0, 6)}`,
+          isConnected: typeof p.isConnected === 'boolean' ? p.isConnected : true
+        }));
+        
+        // Filter out any duplicates by ID
+        const uniqueParticipants = [];
+        const participantIds = new Set();
+        
+        filteredUpdates['participants'].forEach(p => {
+          if (!participantIds.has(p.id)) {
+            participantIds.add(p.id);
+            uniqueParticipants.push(p);
+          }
+        });
+        
+        filteredUpdates['participants'] = uniqueParticipants;
+      }
+      
+      // Add a fresh timestamp to ensure version change
+      filteredUpdates['updatedAt'] = new Date().toISOString();
+      
+      // Send update request
       try {
         const response = await axios.patch(`${API_BASE_URL}/activities/${id}`, filteredUpdates);
         return response.data;
@@ -202,8 +228,65 @@ export const mongoDbService = {
         // Handle 404 errors by creating the activity instead
         if (error.response && error.response.status === 404) {
           console.log(`Activity ${id} not found for update, creating it instead`);
-          return this.createActivity(updates);
+          return this.createActivity({...updates, id});
         }
+        
+        // Handle version conflict errors with retry logic
+        if (error.response && 
+            error.response.status === 400 && 
+            error.response.data && 
+            (error.response.data.message === 'Validation error' || 
+             error.response.data.details?.includes('No matching document found'))) {
+          
+          // If we haven't exceeded max retries, get fresh data and retry
+          if (retryCount < maxRetries) {
+            console.log(`MongoDB Service: Version conflict for activity ${id}, retrying (${retryCount + 1}/${maxRetries})`);
+            
+            // Get fresh data
+            const freshActivity = await this.getActivityById(id);
+            if (freshActivity) {
+              // If we're updating participants, merge carefully
+              if (updates.participants && freshActivity.participants) {
+                // Create a map of existing participants
+                const existingParticipantsMap = new Map();
+                freshActivity.participants.forEach(p => {
+                  existingParticipantsMap.set(p.id, p);
+                });
+                
+                // Process updates.participants and merge with existing
+                updates.participants.forEach(updatedParticipant => {
+                  if (existingParticipantsMap.has(updatedParticipant.id)) {
+                    // Update existing participant
+                    const existingParticipant = existingParticipantsMap.get(updatedParticipant.id);
+                    existingParticipantsMap.set(updatedParticipant.id, {
+                      ...existingParticipant,
+                      ...updatedParticipant
+                    });
+                  } else {
+                    // Add new participant
+                    existingParticipantsMap.set(updatedParticipant.id, updatedParticipant);
+                  }
+                });
+                
+                // Convert map back to array
+                const mergedParticipants = Array.from(existingParticipantsMap.values());
+                
+                // Update the participants array
+                updates = {
+                  ...updates,
+                  participants: mergedParticipants
+                };
+              }
+              
+              // Wait a short time before retrying to avoid race conditions
+              await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+              
+              // Retry the update with a backoff
+              return this.updateActivity(id, updates, retryCount + 1, maxRetries);
+            }
+          }
+        }
+        
         throw error; // Re-throw for other types of errors
       }
     } catch (error: any) {
@@ -214,6 +297,13 @@ export const mongoDbService = {
       } else {
         console.error(`Error updating activity ${id}:`, error);
       }
+      
+      // For the last retry attempt, try to recover by getting the latest data
+      if (retryCount >= maxRetries) {
+        console.log(`MongoDB Service: Max retries reached for activity ${id}, returning latest data`);
+        return this.getActivityById(id);
+      }
+      
       return null;
     }
   },

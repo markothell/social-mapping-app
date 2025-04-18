@@ -284,25 +284,47 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const activity = await hybridActivityService.getById(data.activityId);
           if (!activity) return;
           
+          console.log(`Received participants_updated for activity ${data.activityId} with ${data.participants.length} participants`);
+          
           // Update participants list
           await hybridActivityService.update(data.activityId, (current) => {
-            // Merge participants - keep current data but update isConnected status
-            const updatedParticipants = [...current.participants];
+            // Start with existing participants to preserve names and other data
+            const existingParticipantsMap = new Map();
+            current.participants.forEach(p => existingParticipantsMap.set(p.id, p));
             
+            // Process incoming participants
+            const updatedParticipants = [];
+            
+            // Process each participant from the server
             data.participants.forEach(newParticipant => {
-              const index = updatedParticipants.findIndex(p => p.id === newParticipant.id);
+              const existingParticipant = existingParticipantsMap.get(newParticipant.id);
               
-              if (index >= 0) {
-                // Update existing participant
-                updatedParticipants[index] = {
-                  ...updatedParticipants[index],
+              if (existingParticipant) {
+                // Update existing participant with new connection status
+                updatedParticipants.push({
+                  ...existingParticipant,
                   isConnected: newParticipant.isConnected
-                };
+                });
               } else if (newParticipant.name) {
-                // Add new participant
+                // Add new participant (must have a name)
                 updatedParticipants.push(newParticipant);
               }
             });
+            
+            // For any participants in the activity but not in the server data,
+            // assume they're disconnected but keep them in the list
+            current.participants.forEach(p => {
+              if (!data.participants.some(np => np.id === p.id)) {
+                updatedParticipants.push({
+                  ...p,
+                  isConnected: false
+                });
+              }
+            });
+            
+            // Log the participants list for debugging
+            console.log(`Updated participants list for activity ${data.activityId}:`, 
+              updatedParticipants.map(p => `${p.name} (${p.id}): ${p.isConnected ? 'connected' : 'disconnected'}`));
             
             current.participants = updatedParticipants;
             return current;

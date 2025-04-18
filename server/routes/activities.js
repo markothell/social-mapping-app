@@ -103,38 +103,92 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update activity
+// Update activity with improved concurrency handling
 router.patch('/:id', async (req, res) => {
   try {
     console.log(`Updating activity ${req.params.id} with:`, JSON.stringify(req.body, null, 2));
     
+    // First try to find the activity
     const activity = await Activity.findOne({ id: req.params.id });
     if (!activity) {
       return res.status(404).json({ message: 'Activity not found' });
     }
     
-    // Update only provided fields
-    Object.keys(req.body).forEach(key => {
-      activity[key] = req.body[key];
-    });
+    // Check for duplicate participants and combine them
+    if (req.body.participants) {
+      // Create a map of unique participants by ID
+      const participantsMap = new Map();
+      
+      // First add existing participants that aren't in the update
+      activity.participants.forEach(existingParticipant => {
+        const ep = existingParticipant.toObject ? existingParticipant.toObject() : existingParticipant;
+        if (!req.body.participants.some(p => p.id === ep.id)) {
+          participantsMap.set(ep.id, ep);
+        }
+      });
+      
+      // Then add/update with the incoming participants
+      req.body.participants.forEach(incomingParticipant => {
+        // Look for existing participant in the activity
+        const existingParticipant = activity.participants.find(p => p.id === incomingParticipant.id);
+        
+        if (existingParticipant) {
+          // Merge properties, with incoming properties taking precedence
+          const ep = existingParticipant.toObject ? existingParticipant.toObject() : existingParticipant;
+          participantsMap.set(incomingParticipant.id, {
+            ...ep,
+            ...incomingParticipant,
+            // Ensure name exists
+            name: incomingParticipant.name || ep.name || `User-${incomingParticipant.id.substring(0, 6)}`
+          });
+        } else {
+          // Add new participant
+          participantsMap.set(incomingParticipant.id, {
+            ...incomingParticipant,
+            // Ensure name exists
+            name: incomingParticipant.name || `User-${incomingParticipant.id.substring(0, 6)}`
+          });
+        }
+      });
+      
+      // Replace the participants array with our de-duplicated version
+      req.body.participants = Array.from(participantsMap.values());
+      console.log(`De-duplicated participants for ${req.params.id}: ${req.body.participants.length} participants`);
+    }
     
-    activity.updatedAt = new Date();
-    
+    // Update fields directly using the updateOne method for atomic updates
+    // This avoids the optimistic concurrency control issues
     try {
-      const updatedActivity = await activity.save();
+      const updateFields = { ...req.body, updatedAt: new Date() };
+      
+      const result = await Activity.updateOne(
+        { id: req.params.id },
+        { $set: updateFields }
+      );
+      
+      if (result.modifiedCount === 0) {
+        console.warn(`No documents were modified when updating activity ${req.params.id}`);
+      }
+      
+      // Fetch the updated activity
+      const updatedActivity = await Activity.findOne({ id: req.params.id });
+      if (!updatedActivity) {
+        return res.status(404).json({ message: 'Activity not found after update' });
+      }
+      
       console.log(`Successfully updated activity ${req.params.id}`);
       res.json(updatedActivity);
     } catch (validationError) {
       console.error(`Validation error updating activity ${req.params.id}:`, validationError);
       res.status(400).json({ 
         message: 'Validation error', 
-        details: validationError.message,
-        errors: validationError.errors 
+        details: validationError.message || 'Unknown validation error',
+        errors: validationError.errors || {}
       });
     }
   } catch (err) {
     console.error(`Error updating activity ${req.params.id}:`, err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message || 'Unknown server error' });
   }
 });
 

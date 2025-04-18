@@ -104,6 +104,19 @@ export function useRealTimeActivity(activityId: string, user: any) {
       }
     };
     
+    // New handler for manual participant refresh events
+    const handleRefreshParticipants = (event: CustomEvent) => {
+      const detail = event.detail;
+      if (detail.activityId === activityId) {
+        console.log(`Manual refresh of participants for activity ${activityId}`);
+        hybridActivityService.getById(activityId).then(activity => {
+          if (activity) {
+            setParticipants(activity.participants || []);
+          }
+        });
+      }
+    };
+    
     const handleTagAdded = (event: CustomEvent) => {
       const detail = event.detail;
       if (detail.activityId === activityId) {
@@ -182,6 +195,7 @@ export function useRealTimeActivity(activityId: string, user: any) {
     // Add event listeners
     window.addEventListener('activity_updated', handleActivityUpdated as EventListener);
     window.addEventListener('participants_updated', handleParticipantsUpdated as EventListener);
+    window.addEventListener('refresh_participants', handleRefreshParticipants as EventListener);
     window.addEventListener('tag_added', handleTagAdded as EventListener);
     window.addEventListener('tag_voted', handleTagVoted as EventListener);
     window.addEventListener('tag_deleted', handleTagDeleted as EventListener);
@@ -193,6 +207,7 @@ export function useRealTimeActivity(activityId: string, user: any) {
       // Remove event listeners
       window.removeEventListener('activity_updated', handleActivityUpdated as EventListener);
       window.removeEventListener('participants_updated', handleParticipantsUpdated as EventListener);
+      window.removeEventListener('refresh_participants', handleRefreshParticipants as EventListener);
       window.removeEventListener('tag_added', handleTagAdded as EventListener);
       window.removeEventListener('tag_voted', handleTagVoted as EventListener);
       window.removeEventListener('tag_deleted', handleTagDeleted as EventListener);

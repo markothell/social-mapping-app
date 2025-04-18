@@ -174,10 +174,10 @@ io.on('connection', (socket) => {
   });
     
   // Handle leaving an activity
-  socket.on('leave_activity', ({ activityId, userId }) => {
+  socket.on('leave_activity', async ({ activityId, userId, userName }) => {
     if (!userId) return;
     
-    console.log(`User ${userId} left activity ${activityId}`);
+    console.log(`User ${userName || userId} left activity ${activityId}`);
     
     // Update connections map
     const connection = connections.get(socket.id);
@@ -185,7 +185,7 @@ io.on('connection', (socket) => {
       connection.activityIds.delete(activityId);
     }
     
-    // Remove user from activity participants
+    // Remove user from activity participants in memory
     if (activities.has(activityId)) {
       activities.get(activityId).delete(userId);
       
@@ -198,17 +198,77 @@ io.on('connection', (socket) => {
     // Leave socket.io room
     socket.leave(activityId);
     
-    // Notify other participants
-    if (activities.has(activityId)) {
-      const participants = Array.from(activities.get(activityId)).map(id => ({
-        id,
-        isConnected: true,
-      }));
+    // Use atomic update to avoid concurrency issues
+    try {
+      // Update MongoDB directly using updateOne for atomic operation
+      const result = await Activity.updateOne(
+        { 
+          id: activityId, 
+          "participants.id": userId 
+        },
+        { 
+          $set: { 
+            "participants.$.isConnected": false,
+            updatedAt: new Date()
+          } 
+        }
+      );
       
-      io.to(activityId).emit('participants_updated', {
-        activityId,
-        participants
-      });
+      console.log(`Updated participant ${userId} connection status in activity ${activityId}, modified: ${result.modifiedCount}`);
+    } catch (error) {
+      console.error(`Error updating participant connection status for ${userId} in activity ${activityId}:`, error);
+    }
+    
+    // Get fresh activity data after update and send to clients
+    try {
+      // Get all participants from database to ensure we include disconnected users
+      const activity = await Activity.findOne({ id: activityId });
+      if (activity) {
+        // Create a map of connected users from the activities map
+        const connectedUsers = new Set();
+        if (activities.has(activityId)) {
+          activities.get(activityId).forEach(id => connectedUsers.add(id));
+        }
+        
+        // Create a list of all participants with correct connection status
+        const fullParticipantsList = activity.participants.map(p => {
+          // Ensure every participant has a name
+          const name = p.name || p.userName || `User-${p.id.substring(0, 6)}`;
+          
+          return {
+            id: p.id,
+            name,
+            isConnected: connectedUsers.has(p.id)
+          };
+        });
+        
+        // Log the participants list for debugging
+        console.log(`Participant list for activity ${activityId} after user ${userId} left:`, 
+          fullParticipantsList.map(p => `${p.name} (${p.id}): ${p.isConnected ? 'connected' : 'disconnected'}`));
+        
+        io.to(activityId).emit('participants_updated', {
+          activityId,
+          participants: fullParticipantsList
+        });
+        
+        console.log(`Sent updated participants list with ${fullParticipantsList.length} users for activity ${activityId}`);
+      } else {
+        // Fall back to in-memory list if DB query fails
+        if (activities.has(activityId)) {
+          const participants = Array.from(activities.get(activityId)).map(id => ({
+            id,
+            name: id === userId ? (userName || `User-${id.substring(0, 6)}`) : `User-${id.substring(0, 6)}`,
+            isConnected: true,
+          }));
+          
+          io.to(activityId).emit('participants_updated', {
+            activityId,
+            participants
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Error sending participants list after user ${userId} left activity ${activityId}:`, error);
     }
   });
   
@@ -392,7 +452,7 @@ io.on('connection', (socket) => {
   });
   
   // Handle disconnection
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log(`User disconnected: ${socket.id}`);
     
     const connection = connections.get(socket.id);
@@ -400,19 +460,61 @@ io.on('connection', (socket) => {
       // For each activity this user was in
       for (const activityId of connection.activityIds) {
         if (activities.has(activityId)) {
-          // Remove user from activity
+          // Remove user from activity in memory
           activities.get(activityId).delete(connection.userId);
           
-          // Notify other participants
-          const participants = Array.from(activities.get(activityId)).map(id => ({
-            id,
-            isConnected: true,
-          }));
+          // Update the MongoDB database to set isConnected = false for this user
+          try {
+            const activity = await Activity.findOne({ id: activityId });
+            if (activity) {
+              const participant = activity.participants.find(p => p.id === connection.userId);
+              if (participant) {
+                participant.isConnected = false;
+                activity.updatedAt = new Date();
+                await activity.save();
+                console.log(`Updated participant ${connection.userId} to isConnected=false in activity ${activityId} after disconnect`);
+              }
+            }
+          } catch (error) {
+            console.error(`Error updating participant connection status for ${connection.userId} in activity ${activityId}:`, error);
+          }
           
-          io.to(activityId).emit('participants_updated', {
-            activityId,
-            participants
-          });
+          // Create full participants list including disconnected users
+          try {
+            // Get all participants from database to ensure we include disconnected users
+            const activity = await Activity.findOne({ id: activityId });
+            if (activity) {
+              // Create a list of all participants with correct connection status
+              const fullParticipantsList = activity.participants.map(p => ({
+                id: p.id,
+                name: p.name,
+                isConnected: p.id === connection.userId ? false : 
+                    activities.has(activityId) && activities.get(activityId).has(p.id)
+              }));
+              
+              io.to(activityId).emit('participants_updated', {
+                activityId,
+                participants: fullParticipantsList
+              });
+              
+              console.log(`Sent updated participants list with ${fullParticipantsList.length} users for activity ${activityId} after disconnect`);
+            } else {
+              // Fall back to in-memory list if DB query fails
+              if (activities.has(activityId)) {
+                const participants = Array.from(activities.get(activityId)).map(id => ({
+                  id,
+                  isConnected: true,
+                }));
+                
+                io.to(activityId).emit('participants_updated', {
+                  activityId,
+                  participants
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Error sending participants list after user ${connection.userId} disconnected from activity ${activityId}:`, error);
+          }
           
           // Clean up empty activities
           if (activities.get(activityId).size === 0) {

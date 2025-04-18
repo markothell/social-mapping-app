@@ -9,6 +9,7 @@ import EntryForm from '@/components/EntryForm';
 import AdminControls from '@/components/AdminControls';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import ParticipantActivityIndicator from '@/components/ParticipantActivityIndicator';
+import { useWebSocket } from '@/core/services/websocketService';
 
 // Helper function for consistent params handling across the app
 function useParams<T>(params: T | Promise<T>): T {
@@ -27,6 +28,9 @@ export default function ActivityPage({
   // Unwrap params correctly
   const unwrappedParams = useParams(params);
   const sessionId = unwrappedParams.sessionId;
+
+  // Direct access to websocket service
+  const { sendMessage } = useWebSocket();
   
   // Load user data from localStorage
   useEffect(() => {
@@ -51,8 +55,42 @@ export default function ActivityPage({
     error,
     participants,
     isConnected,
-    offline
+    offline,
   } = useRealTimeActivity(sessionId, user);
+
+  const handleSwitchUser = () => {
+    if (user && activity) {
+      console.log(`User ${user.name} (${user.id}) is leaving activity ${activity.id}`);
+      
+      // Store the current user info before clearing it
+      const currentUserId = user.id;
+      const currentUserName = user.name;
+      const activityId = activity.id;
+      
+      // Manually emit leave activity event
+      sendMessage('leave_activity', {
+        activityId: activityId,
+        userId: currentUserId,
+        userName: currentUserName
+      });
+      
+      // Force a refresh of the participants list after a short delay
+      // This ensures the UI updates even if the websocket message is missed
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('refresh_participants', {
+          detail: { activityId }
+        }));
+      }, 500);
+      
+      // Clear user data
+      localStorage.removeItem('user');
+      setUser(null);
+    } else {
+      // Just clear user data if no activity or user
+      localStorage.removeItem('user');
+      setUser(null);
+    }
+  };
   
   // Handle joining the activity
   const handleJoin = (name: string) => {
@@ -170,11 +208,7 @@ export default function ActivityPage({
               </button>
               
               <button
-                onClick={() => {
-                  // Clear user data
-                  localStorage.removeItem('user');
-                  setUser(null);
-                }}
+                onClick={handleSwitchUser}
                 className="secondary-button"
               >
                 Switch User
