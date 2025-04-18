@@ -215,9 +215,17 @@ export function useRealTimeActivity(activityId: string, user: any) {
       window.removeEventListener('phase_changed', handlePhaseChanged as EventListener);
       
       // Only leave the activity if we joined it
+      // Pass false to indicate we don't want to update state during unmount
       if (hasJoinedRef.current) {
+        console.log(`Cleanup: Leaving activity ${activityId} for user`, user?.id);
         hasJoinedRef.current = false; // Mark as left to prevent rejoining
-        leaveActivity();
+        
+        // Call leaveActivity with false to prevent state updates during cleanup
+        try {
+          leaveActivity(false);
+        } catch (error) {
+          console.error('Error during leaveActivity in cleanup:', error);
+        }
       }
     };
   }, [activityId, user, joinActivity, leaveActivity]);

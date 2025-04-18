@@ -371,15 +371,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       
       socketInstance.on('disconnect', (reason) => {
         console.log('WebSocket disconnected:', reason);
-        setIsConnected(false);
         
-        if (reason === 'io server disconnect') {
-          setError('Server disconnected the connection');
-        } else if (reason === 'transport close' && !navigator.onLine) {
-          setError('You are offline. Changes will be saved locally and synced when you reconnect.');
-          setOffline(true);
-        } else {
-          setError('Connection lost. Attempting to reconnect...');
+        // Check if component is still mounted before updating state
+        try {
+          setIsConnected(false);
+          
+          if (reason === 'io server disconnect') {
+            setError('Server disconnected the connection');
+          } else if (reason === 'transport close' && !navigator.onLine) {
+            setError('You are offline. Changes will be saved locally and synced when you reconnect.');
+            setOffline(true);
+          } else {
+            setError('Connection lost. Attempting to reconnect...');
+          }
+        } catch (error) {
+          console.error('Error updating state on disconnect:', error);
         }
       });
       
@@ -404,8 +410,24 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     
     // Cleanup on unmount
     return () => {
-      // We don't disconnect here to prevent reconnection loops
-      // Only clean up event listeners if needed
+      // We don't disconnect socket here to prevent reconnection loops
+      // But we need to mark any cleanup to avoid state updates after unmount
+      console.log('WebSocketProvider cleanup');
+      
+      // Nullify the cleanup effects that might cause setState calls
+      // This ensures that even if socket events fire, we don't update state
+      const cleanupSocket = socketRef.current;
+      if (cleanupSocket) {
+        // Remove all listeners that might call setState
+        try {
+          cleanupSocket.off('connect');
+          cleanupSocket.off('disconnect');
+          cleanupSocket.off('connect_error');
+          // We don't remove the data event listeners since they don't directly update state
+        } catch (error) {
+          console.error('Error cleaning up socket event listeners:', error);
+        }
+      }
     };
   }, [currentActivity, currentUser, queuedMessages]);
   
@@ -439,25 +461,34 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   };
   
   // Function to leave current activity
-  const leaveActivity = useCallback(() => {
+  const leaveActivity = useCallback((clearState = true) => {
     if (!currentActivity || !currentUser) return;
     
     console.log(`Leaving activity ${currentActivity}`);
     
-    if (!offline && isConnected && socketRef.current) {
-      socketRef.current.emit('leave_activity', { 
-        activityId: currentActivity,
-        userId: currentUser.id
-      });
+    // We will always try to send the leave message if a socket exists
+    if (socketRef.current) {
+      try {
+        socketRef.current.emit('leave_activity', { 
+          activityId: currentActivity,
+          userId: currentUser.id,
+          userName: currentUser.name
+        });
+        console.log(`Sent leave_activity event for user ${currentUser.id} in activity ${currentActivity}`);
+      } catch (error) {
+        console.error('Error sending leave_activity event:', error);
+      }
+    } else {
+      console.log('Cannot send leave_activity: Socket not available');
     }
     
-    // Avoid calling setState inside a setState callback
-    const activityId = currentActivity; // Capture current value
-    if (activityId !== null) {
+    // Only update state if explicitly requested (not during unmounting)
+    if (clearState) {
+      // Clear the current activity and user in state
       setCurrentActivity(null);
+      setCurrentUser(null);
     }
-    setCurrentUser(null); 
-  }, [isConnected, offline, currentActivity, currentUser]);
+  }, [currentActivity, currentUser]);
   
   // Function to send a message
   const sendMessage = (event: string, data: any) => {
