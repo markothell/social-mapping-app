@@ -1,3 +1,4 @@
+// src/app/activity/[sessionId]/mapping-results/page.tsx
 "use client";
 
 import { useState, useEffect, use } from 'react';

@@ -16,7 +16,12 @@ app.use(bodyParser.json());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    // Update to include your Vercel domain
+    origin: [
+      process.env.CLIENT_URL,
+      "https://social-mapping-e7jf91byn-markothells-projects.vercel.app/", //Vercel domain
+      //"https://your-custom-domain.com"           // If you have a custom domain
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["my-custom-header"],
     credentials: true

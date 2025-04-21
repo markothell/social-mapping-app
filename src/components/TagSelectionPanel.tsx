@@ -1,3 +1,4 @@
+//src/components/TagSelectionPanel.tsx.txt
 "use client";
 
 import { useState } from 'react';
