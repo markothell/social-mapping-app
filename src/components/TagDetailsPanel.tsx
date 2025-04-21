@@ -36,6 +36,9 @@ interface TagDetailsPanelProps {
   participants: any[];
   onSelectTag: (tagId: string) => void;
   onClearSelection: () => void;
+  onCommentClick?: (userId: string) => void;
+  viewMode?: 'aggregate' | 'individual';
+  participantName?: string;
 }
 
 // Using memo to prevent unnecessary re-renders
@@ -50,8 +53,35 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
   mappings,
   participants,
   onSelectTag,
-  onClearSelection
+  onClearSelection,
+  onCommentClick,
+  viewMode = 'aggregate',
+  participantName
 }: TagDetailsPanelProps) {
+  
+  // Helper function to get all comments for the current user
+  const getAllUserComments = () => {
+    if (viewMode !== 'individual' || !participantName) return [];
+    
+    const comments = [];
+    const mapping = mappings.find(m => m.userName === participantName);
+    
+    if (!mapping) return [];
+    
+    for (const position of mapping.positions) {
+      if (position.annotation) {
+        const tag = tags.find(t => t.id === position.tagId);
+        comments.push({
+          tagId: position.tagId,
+          tagText: tag?.text || position.tagId,
+          text: position.annotation
+        });
+      }
+    }
+    
+    return comments;
+  };
+
   return (
     <div className="statistics-panel">
       {/* Tab Navigation */}
@@ -65,15 +95,33 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
         <button 
           className={activeTab === 'comments' ? 'active' : ''}
           onClick={() => setActiveTab('comments')}
-          disabled={!selectedTag}
+          disabled={!selectedTag && !(viewMode === 'individual' && !selectedTag && participantName)}
         >
           Comments
         </button>
       </div>
       
-      {selectedTag && tagStats ? (
+      {activeTab === 'comments' && viewMode === 'individual' && !selectedTag ? (
         <div className="selected-tag-stats">
-          <h4>Selected Tag: {tagStats.tag.text}</h4>
+          <h4>All Comments from {participantName}</h4>
+          <div className="tag-comments-section">
+            {getAllUserComments().length > 0 ? (
+              <div className="annotation-list">
+                {getAllUserComments().map((comment, idx) => (
+                  <div key={idx} className="annotation-item">
+                    <div className="comment-tag-name">{comment.tagText}</div>
+                    <div className="annotation-content">{comment.text}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-annotations">No comments available from this participant.</p>
+            )}
+          </div>
+        </div>
+      ) : selectedTag && tagStats ? (
+        <div className="selected-tag-stats">
+          <h4>{tagStats.tag.text}</h4>
           <p>Creator: {tagStats.tag.creatorName || 'Unknown'}</p>
           <p>Mapped by {tagStats.mappingCount} participants</p>
           <p>Average position: ({tagStats.averageX.toFixed(2)}, {tagStats.averageY.toFixed(2)})</p>
@@ -86,12 +134,27 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
               
               {tagStats.annotations.length > 0 ? (
                 <div className="annotation-list">
-                  {tagStats.annotations.map((annotation, idx) => (
-                    <div key={idx} className="annotation-item">
-                      <div className="annotation-content">{annotation.text}</div>
-                      <div className="annotation-author">— {annotation.userName}</div>
-                    </div>
-                  ))}
+                  {tagStats.annotations.map((annotation, idx) => {
+                    // Find mapping with this userName
+                    const mapping = mappings.find(m => m.userName === annotation.userName);
+                    const userId = mapping?.userId;
+                    
+                    return (
+                      <div 
+                        key={idx} 
+                        className="annotation-item"
+                        onClick={() => onCommentClick && userId && onCommentClick(userId)}
+                      >
+                        <div className="annotation-content">{annotation.text}</div>
+                        <div className="annotation-author">
+                          — {annotation.userName}
+                          {userId && (
+                            <span className="view-map-link"> (Click to view map)</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="no-annotations">No annotations available for this tag.</p>
@@ -212,6 +275,30 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
         .statistics-panel {
           flex: 1;
           min-width: 300px;
+        }
+        
+        .annotation-item {
+          cursor: pointer;
+          transition: background-color 0.2s;
+          padding: 8px;
+          border-radius: 4px;
+        }
+        
+        .annotation-item:hover {
+          background-color: #f1f3f4;
+        }
+        
+        .view-map-link {
+          color: #1a73e8;
+          font-size: 0.8rem;
+          font-style: italic;
+        }
+        
+        .comment-tag-name {
+          font-weight: 500;
+          color: #1a73e8;
+          margin-bottom: 0.3rem;
+          font-size: 0.85rem;
         }
         
         .tab-controls {

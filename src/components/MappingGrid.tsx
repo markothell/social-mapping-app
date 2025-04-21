@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
+import { getTagColor } from '@/utils/mappingDataUtils';
 
 interface MappingSettings {
   xAxisLabel: string;
@@ -137,12 +138,25 @@ export default function MappingGrid({
             onClick={handleGridClick}
           >
             {/* Red Center Axes */}
-            <div className="center-axis horizontal"></div>
-            <div className="center-axis vertical"></div>
+            <div className="center-axis horizontal black"></div>
+            <div className="center-axis vertical black"></div>
             
             {/* Position Tags - Explicitly render here to ensure they're contained in the grid */}
             {Object.entries(userMappings).map(([tagId, position]) => {
               const displayText = position.text || tagId;
+              
+              // Get tag color
+              const tagColor = getTagColor(tagId);
+              
+              // Default size and text display
+              const size = 2.5; // Default size in rem
+              const fontSize = 0.85;
+              const maxChars = 10;
+              
+              // Truncate text if needed
+              const truncatedText = displayText.length > maxChars
+                ? displayText.substring(0, maxChars - 1) + '…'
+                : displayText;
               
               return (
                 <div
@@ -151,11 +165,16 @@ export default function MappingGrid({
                   style={{
                     left: `${position.x * 100}%`,
                     top: `${(1 - position.y) * 100}%`,
-                    transform: 'translate(-50%, -50%)'
+                    transform: 'translate(-50%, -50%)',
+                    border: `2px solid ${tagColor}`,
+                    backgroundColor: `${tagColor}40` // 40 = 25% opacity
                   }}
+                  title={displayText} // Show full text on hover
                 >
-                  <div className="tag-content">
-                    {displayText}
+                  <div 
+                    className="tag-content"
+                    style={{ fontSize: `${fontSize}rem` }}
+                  >
                     {position.annotation && (
                       <div className="tag-annotation-indicator" title={position.annotation}>i</div>
                     )}
@@ -165,7 +184,13 @@ export default function MappingGrid({
             })}
             
             {selectedTag && (
-              <div className="selected-tag-indicator">
+              <div 
+                className="selected-tag-indicator"
+                style={{ 
+                  borderColor: getTagColor(selectedTag.id),
+                  backgroundColor: `${getTagColor(selectedTag.id)}20` // 20 = 12.5% opacity
+                }}
+              >
                 Click to position: {selectedTag.text}
               </div>
             )}
@@ -254,6 +279,10 @@ export default function MappingGrid({
           z-index: 5;
         }
         
+        .center-axis.black {
+          background-color: #000000;
+        }
+        
         .center-axis.horizontal {
           width: 100%;
           height: 1px;
@@ -297,17 +326,18 @@ export default function MappingGrid({
           position: absolute;
           transform: translate(-50%, -50%);
           background-color: rgba(232, 240, 254, 0.9);
-          border: 2px solid #1a73e8;
           border-radius: 50%;
-          padding: 0.5rem;
-          min-width: 2.5rem;
-          min-height: 2.5rem;
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 100; /* Increased z-index to ensure tags appear above other elements */
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
           pointer-events: auto; /* Ensure tags can be clicked */
+          overflow: hidden;
+          padding: 0;
+          box-sizing: border-box;
+          width: 2.5rem;
+          height: 2.5rem;
         }
         
         /* Ensure the mapping grid has position relative for absolute positioning context */
@@ -325,10 +355,19 @@ export default function MappingGrid({
         
         .tag-content {
           word-break: break-word;
+          word-wrap: break-word;
           position: relative;
           font-size: 0.85rem;
           text-align: center;
-          max-width: 80px;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.25rem;
+          box-sizing: border-box;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
         .tag-annotation-indicator {

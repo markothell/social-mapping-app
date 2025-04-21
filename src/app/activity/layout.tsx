@@ -1,11 +1,27 @@
 "use client";
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 export default function ActivityLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [userName, setUserName] = useState('Guest');
+
+  // Only access localStorage after the component has mounted (client-side)
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        setUserName(user.name || 'User');
+      }
+    } catch (e) {
+      console.error('Error getting user from localStorage:', e);
+    }
+  }, []);
+
   return (
     <div className="activity-layout">
       <header className="app-header">
@@ -13,6 +29,9 @@ export default function ActivityLayout({
           <Link href="/" className="logo">
             Social Mapping App
           </Link>
+          <div className="user-name">
+            User: {userName}
+          </div>
         </div>
       </header>
       
@@ -43,6 +62,15 @@ export default function ActivityLayout({
           max-width: 1200px;
           margin: 0 auto;
           padding: 0 1rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .user-name {
+          color: white;
+          font-weight: 500;
+          font-size: 0.9rem;
         }
         
         .logo {

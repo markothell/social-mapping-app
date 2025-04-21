@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { getTagColor } from '@/utils/mappingDataUtils';
 
 interface Tag {
   id: string;
@@ -114,12 +115,16 @@ export default function TagSelectionPanel({
             const isMapped = mappedTags.includes(tag.id);
             const isSelected = selectedTag === tag.id;
             
+            const tagColor = getTagColor(tag.id);
+            
             return (
               <div
                 key={tag.id}
                 className={`tag-item ${isMapped ? 'mapped' : ''} ${isSelected ? 'selected' : ''}`}
                 onClick={() => onSelectTag(tag.id)}
+                style={{ borderLeft: `4px solid ${tagColor}` }}
               >
+                <div className="color-indicator" style={{ backgroundColor: tagColor }}></div>
                 <div className="tag-text">{tag.text}</div>
                 <div className="tag-status">
                   {isMapped ? (
@@ -258,6 +263,8 @@ export default function TagSelectionPanel({
           cursor: pointer;
           border: 1px solid #dadce0;
           transition: all 0.2s;
+          position: relative;
+          overflow: hidden;
         }
         
         .tag-item:hover {
@@ -265,8 +272,13 @@ export default function TagSelectionPanel({
           transform: translateY(-1px);
         }
         
-        .tag-item.mapped {
-          border-left: 4px solid #34a853;
+        .color-indicator {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          position: absolute;
+          top: 0.75rem;
+          right: 0.75rem;
         }
         
         .tag-item.selected {

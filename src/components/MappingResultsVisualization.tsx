@@ -3,7 +3,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import ResultsVisualizationGrid from './ResultsVisualizationGrid';
 import TagDetailsPanel from './TagDetailsPanel';
-import { calculateQuadrantStats, generateHeatmapData } from '@/utils/mappingDataUtils';
+import { 
+  calculateQuadrantStats, 
+  calculateAveragePositions,
+  calculateStandardDeviations
+} from '@/utils/mappingDataUtils';
 
 interface MappingSettings {
   xAxisLabel: string;
@@ -68,7 +72,7 @@ export default function MappingResultsVisualization({
   mappings,
   participants
 }: MappingResultsVisualizationProps) {
-  const [viewMode, setViewMode] = useState<'aggregate' | 'individual' | 'heatmap'>('aggregate');
+  const [viewMode, setViewMode] = useState<'aggregate' | 'individual'>('aggregate');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'statistics' | 'comments'>('statistics');
@@ -100,50 +104,33 @@ export default function MappingResultsVisualization({
     return calculateQuadrantStats(mappings, tags, mappingSettings);
   }, [mappings, tags, mappingSettings]);
   
-  const heatmapData = useMemo(() => {
-    return generateHeatmapData(mappings);
-  }, [mappings]);
-  
   // Get aggregate positions or participant positions
   const positions = useMemo(() => {
     if (viewMode === 'aggregate') {
-      // Calculate average positions
-      const aggregatePositions: Record<string, {
-        x: number;
-        y: number;
-        count: number;
-        text: string;
-      }> = {};
+      // Calculate average positions using our utility function
+      const averagePositions = calculateAveragePositions(mappings, tags);
       
-      mappings.forEach(mapping => {
-        mapping.positions.forEach(pos => {
-          if (!aggregatePositions[pos.tagId]) {
-            const tag = tags.find(t => t.id === pos.tagId);
-            
-            aggregatePositions[pos.tagId] = {
-              x: 0,
-              y: 0,
-              count: 0,
-              text: tag?.text || pos.text || pos.tagId,
-            };
-          }
-          
-          aggregatePositions[pos.tagId].x += pos.x;
-          aggregatePositions[pos.tagId].y += pos.y;
-          aggregatePositions[pos.tagId].count++;
-        });
+      // Calculate standard deviations and consensus
+      const stdDeviations = calculateStandardDeviations(mappings, averagePositions);
+      
+      // Combine the data for display
+      const result: Record<string, Position> = {};
+      
+      Object.keys(averagePositions).forEach(tagId => {
+        const avgPos = averagePositions[tagId];
+        const stdDev = stdDeviations[tagId] || { consensus: 1 };
+        
+        result[tagId] = {
+          tagId,
+          x: avgPos.x,
+          y: avgPos.y,
+          count: avgPos.count,
+          text: avgPos.text,
+          consensus: stdDev.consensus
+        };
       });
       
-      // Calculate averages
-      Object.keys(aggregatePositions).forEach(tagId => {
-        const pos = aggregatePositions[tagId];
-        if (pos.count > 0) {
-          pos.x /= pos.count;
-          pos.y /= pos.count;
-        }
-      });
-      
-      return aggregatePositions;
+      return result;
     } else {
       // Individual participant's positions
       if (!selectedParticipant) return {};
@@ -158,6 +145,10 @@ export default function MappingResultsVisualization({
         participantPositions[pos.tagId] = {
           ...pos,
           text: tag?.text || pos.text || pos.tagId,
+          consensus: 1, // Individual tags have perfect consensus (with themselves)
+          count: 1,
+          // Include all annotations from this user for all tags
+          annotation: pos.annotation || undefined
         };
       });
       
@@ -178,6 +169,14 @@ export default function MappingResultsVisualization({
       setSelectedParticipant(mappings[0].userId);
     }
   }, [viewMode, selectedParticipant, mappings]);
+  
+  // Function to handle clicking on a comment - switches to individual view for that user and clears tag selection
+  const handleCommentClick = (userId: string) => {
+    console.log(`Showing individual view for user ${userId}`);
+    setViewMode('individual');
+    setSelectedParticipant(userId);
+    setSelectedTag(null); // Clear selected tag to show full map
+  };
   
   // Update active tab when selected tag changes - separate effect
   useEffect(() => {
@@ -339,12 +338,6 @@ export default function MappingResultsVisualization({
           >
             Individual View
           </button>
-          <button 
-            className={viewMode === 'heatmap' ? 'active' : ''}
-            onClick={() => setViewMode('heatmap')}
-          >
-            Heatmap View
-          </button>
         </div>
         
         {viewMode === 'individual' && (
@@ -365,10 +358,6 @@ export default function MappingResultsVisualization({
           </div>
         )}
         
-        <div className="export-controls">
-          <button onClick={exportToCSV}>Export CSV</button>
-          <button onClick={exportToJSON}>Export JSON</button>
-        </div>
       </div>
       
       <div className="visualization-container">
@@ -377,9 +366,10 @@ export default function MappingResultsVisualization({
           viewMode={viewMode}
           positions={positions}
           selectedTag={selectedTag}
-          heatmapData={heatmapData}
           tags={tags}
           onSelectTag={(tagId) => setSelectedTag(tagId === selectedTag ? null : tagId)}
+          participantName={viewMode === 'individual' ? 
+            mappings.find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
         />
         
         <TagDetailsPanel
@@ -394,6 +384,10 @@ export default function MappingResultsVisualization({
           participants={participants}
           onSelectTag={(tagId) => setSelectedTag(tagId)}
           onClearSelection={() => setSelectedTag(null)}
+          onCommentClick={handleCommentClick}
+          viewMode={viewMode}
+          participantName={viewMode === 'individual' ? 
+            mappings.find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
         />
       </div>
       

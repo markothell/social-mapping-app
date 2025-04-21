@@ -178,8 +178,8 @@ export default function MappingPage({
     <div className="mapping-page">
       <div className="mapping-container">
         <div className="mapping-header">
-          <h1>Social Mapping</h1>
-          <p className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</p>
+          <h1 className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</h1>
+          <p className="stage-subtitle">Social Mapping</p>
           
           <div className="mapping-instructions">
             <p>
@@ -266,16 +266,18 @@ export default function MappingPage({
           text-align: center;
         }
         
-        .mapping-header h1 {
+        .activity-title {
           margin-top: 0;
           margin-bottom: 0.5rem;
-          font-size: 2rem;
+          font-size: 2.2rem;
           color: #202124;
+          font-weight: 600;
         }
         
-        .activity-title {
-          font-size: 1.2rem;
+        .stage-subtitle {
+          font-size: 1.3rem;
           color: #1a73e8;
+          margin-top: 0;
           margin-bottom: 1rem;
           font-weight: 500;
         }

@@ -4,6 +4,93 @@
  * Utility functions for processing and analyzing mapping data
  */
 
+// Color palette for tags - vibrant, distinguishable colors
+const TAG_COLORS = [
+  '#4285F4', // Google Blue
+  '#EA4335', // Google Red
+  '#FBBC05', // Google Yellow
+  '#34A853', // Google Green
+  '#8E24AA', // Purple
+  '#16A085', // Turquoise
+  '#D35400', // Orange
+  '#2980B9', // Deep Blue
+  '#C0392B', // Deep Red
+  '#27AE60', // Deep Green
+  '#F39C12', // Amber
+  '#7D3C98', // Deep Purple
+  '#2C3E50', // Navy
+  '#E74C3C', // Bright Red
+  '#1ABC9C', // Bright Green
+  '#3498DB', // Sky Blue
+  '#9B59B6', // Violet
+  '#E67E22', // Carrot Orange
+  '#F1C40F', // Sun Yellow
+  '#00BCD4', // Cyan
+];
+
+/**
+ * Get a consistent color for a tag based on its ID
+ */
+export function getTagColor(tagId: string): string {
+  // Use the tag ID to deterministically pick a color from our palette
+  // Hash the tag ID to a number and use modulo to get an index
+  let hash = 0;
+  for (let i = 0; i < tagId.length; i++) {
+    hash = (hash << 5) - hash + tagId.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  
+  // Ensure positive value with Math.abs
+  const colorIndex = Math.abs(hash) % TAG_COLORS.length;
+  return TAG_COLORS[colorIndex];
+}
+
+/**
+ * Calculate the size of a tag circle based on variance
+ * Higher consensus (lower variance) = smaller circle
+ * Lower consensus (higher variance) = larger circle
+ * @param consensus - A value between 0 and 1, where 1 is perfect consensus
+ * @param count - The number of mappings for this tag
+ * @returns Size in rem units 
+ */
+export function calculateTagSize(consensus: number, count: number): {
+  size: number;
+  fontSize: number;
+  maxChars: number;
+} {
+  // Ensure count is at least 1 to avoid division by zero
+  const mappingCount = Math.max(1, count);
+  
+  // Base size calculations
+  const minSize = 2.5; // Minimum size in rem
+  const maxSize = 6; // Maximum size in rem
+  
+  // Calculate circle size based on consensus value:
+  // - High consensus (consensus close to 1) → smaller circle
+  // - Low consensus (consensus close to 0) → larger circle
+  const inverseConsensus = 1 - (consensus || 0); // Convert to a value where higher means larger
+  let size = minSize + (inverseConsensus * (maxSize - minSize));
+  
+  // Adjust for mapping count - more mappings means slightly larger circles
+  const countFactor = Math.min(0.5, (Math.log(mappingCount) / 10)); // Logarithmic scale
+  size += countFactor;
+  
+  // Now determine font size based on circle size
+  const fontSize = Math.max(0.7, size * 0.3); // Scale font proportionally
+  
+  // Calculate how many characters can fit
+  // Assume each character is roughly 0.5rem wide for the calculated font size
+  const circleWidth = size * 0.8; // Available width is less than circle diameter
+  const charWidth = fontSize * 0.5; // Approximate width of a character
+  const maxChars = Math.floor(circleWidth / charWidth);
+  
+  return {
+    size,
+    fontSize,
+    maxChars: Math.max(3, maxChars) // Ensure at least 3 characters are shown
+  };
+}
+
 interface Position {
   tagId: string;
   x: number;

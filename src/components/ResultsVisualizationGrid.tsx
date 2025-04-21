@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from 'react';
-import HeatmapCanvas from './HeatmapCanvas';
+import { getTagColor, calculateTagSize } from '@/utils/mappingDataUtils';
 
 interface Position {
   tagId: string;
@@ -10,6 +10,7 @@ interface Position {
   annotation?: string;
   text?: string;
   count?: number;
+  consensus?: number;
 }
 
 interface Tag {
@@ -26,12 +27,12 @@ interface ResultsVisualizationGridProps {
     yAxisTopLabel: string;
     yAxisBottomLabel: string;
   };
-  viewMode: 'aggregate' | 'individual' | 'heatmap';
+  viewMode: 'aggregate' | 'individual';
   positions: Record<string, Position>;
   selectedTag: string | null;
-  heatmapData: any[];
   tags: Tag[];
   onSelectTag: (tagId: string) => void;
+  participantName?: string;
 }
 
 // Using memo to prevent unnecessary re-renders
@@ -40,9 +41,9 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
   viewMode,
   positions,
   selectedTag,
-  heatmapData,
   tags,
-  onSelectTag
+  onSelectTag,
+  participantName
 }: ResultsVisualizationGridProps) {
   return (
     <div className="grid-container">
@@ -51,30 +52,35 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
       <div className="grid-row">
         <div className="direction-label left">{settings.xAxisLeftLabel}</div>
         
-        {viewMode === 'heatmap' ? (
-          <div className="mapping-grid">
-            <HeatmapCanvas 
-              data={heatmapData}
-              axisLabels={{
-                xAxisLeftLabel: settings.xAxisLeftLabel,
-                xAxisRightLabel: settings.xAxisRightLabel,
-                yAxisTopLabel: settings.yAxisTopLabel,
-                yAxisBottomLabel: settings.yAxisBottomLabel
-              }}
-              width={600}
-              height={600}
-            />
-          </div>
-        ) : (
-          <div className="mapping-grid">
-            {/* Red Center Axes */}
-            <div className="center-axis horizontal"></div>
-            <div className="center-axis vertical"></div>
-            
-            {/* Positioned Tags */}
+        <div className="mapping-grid">
+          {/* Red Center Axes */}
+          <div className="center-axis horizontal black"></div>
+          <div className="center-axis vertical black"></div>
+          
+          {/* Display participant name in individual view */}
+          {viewMode === 'individual' && participantName && (
+            <div className="participant-name-label">
+              Individual Map for: {participantName}
+            </div>
+          )}
+          
+          {/* Positioned Tags */}
             {Object.entries(positions).map(([tagId, position]) => {
               // Skip if a tag is selected and this isn't it
               if (selectedTag && tagId !== selectedTag) return null;
+              
+              const tagColor = getTagColor(tagId);
+              
+              // Calculate size based on consensus and count
+              const count = position.count || 1;
+              const consensus = position.consensus !== undefined ? position.consensus : 1;
+              const { size, fontSize, maxChars } = calculateTagSize(consensus, count);
+              
+              // Truncate text if needed
+              const displayText = position.text || '';
+              const truncatedText = displayText.length > maxChars
+                ? displayText.substring(0, maxChars - 1) + '…'
+                : displayText;
               
               return (
                 <div
@@ -83,14 +89,23 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
                   style={{
                     left: `${position.x * 100}%`,
                     top: `${(1 - position.y) * 100}%`,
-                    transform: 'translate(-50%, -50%)'
+                    transform: 'translate(-50%, -50%)',
+                    border: `2px solid ${tagColor}`,
+                    backgroundColor: `${tagColor}40`, // 40 = 25% opacity
+                    width: `${size}rem`,
+                    height: `${size}rem`,
+                    minWidth: `${size}rem`,
+                    minHeight: `${size}rem`
                   }}
                   onClick={() => onSelectTag(tagId)}
+                  title={position.text} // Show full text on hover
                 >
-                  <div className="tag-content">
-                    {position.text}
+                  <div 
+                    className="tag-content"
+                    style={{ fontSize: `${fontSize}rem` }}
+                  >
                     {position.count && position.count > 1 && (
-                      <div className="tag-count">{position.count}</div>
+                      <div className="tag-count" style={{ backgroundColor: tagColor }}>{position.count}</div>
                     )}
                     {position.annotation && (
                       <div className="tag-annotation-indicator" title={position.annotation}>i</div>
@@ -101,12 +116,17 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
             })}
             
             {selectedTag && (
-              <div className="selected-tag-indicator">
+              <div 
+                className="selected-tag-indicator"
+                style={{ 
+                  borderColor: getTagColor(selectedTag),
+                  backgroundColor: `${getTagColor(selectedTag)}20` // 20 = 12.5% opacity
+                }}
+              >
                 Selected: {tags.find(t => t.id === selectedTag)?.text || selectedTag}
               </div>
             )}
           </div>
-        )}
         
         <div className="direction-label right">{settings.xAxisRightLabel}</div>
       </div>
@@ -143,6 +163,10 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           z-index: 1;
         }
         
+        .center-axis.black {
+          background-color: #000000;
+        }
+        
         .center-axis.horizontal {
           width: 100%;
           height: 1px;
@@ -175,9 +199,6 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           background-color: rgba(232, 240, 254, 0.9);
           border: 2px solid #1a73e8;
           border-radius: 50%;
-          padding: 0.5rem;
-          min-width: 2.5rem;
-          min-height: 2.5rem;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -185,6 +206,9 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
           cursor: pointer;
           transition: transform 0.2s, box-shadow 0.2s;
+          overflow: hidden;
+          padding: 0;
+          box-sizing: border-box;
         }
         
         .positioned-tag:hover {
@@ -195,10 +219,18 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
         
         .tag-content {
           word-break: break-word;
+          word-wrap: break-word;
           position: relative;
-          font-size: 0.85rem;
           text-align: center;
-          max-width: 80px;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem;
+          box-sizing: border-box;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
         .tag-count {
@@ -245,6 +277,21 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           font-size: 0.9rem;
           z-index: 10;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .participant-name-label {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background-color: rgba(255, 255, 255, 0.9);
+          border: 1px solid #dadce0;
+          border-radius: 4px;
+          padding: 0.4rem 0.6rem;
+          font-size: 0.9rem;
+          color: #1a73e8;
+          font-weight: 500;
+          z-index: 10;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         @media (max-width: 992px) {

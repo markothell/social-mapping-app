@@ -115,8 +115,8 @@ export default function MappingResultsPage({
     <div className="mapping-results-page">
       <div className="results-container">
         <div className="results-header">
-          <h1>Mapping Results</h1>
-          <p className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</p>
+          <h1 className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</h1>
+          <p className="stage-subtitle">Mapping Results</p>
           
           <div className="completion-status">
             <div className="completion-bar">
@@ -237,16 +237,18 @@ export default function MappingResultsPage({
           text-align: center;
         }
         
-        .results-header h1 {
+        .activity-title {
           margin-top: 0;
           margin-bottom: 0.5rem;
-          font-size: 2rem;
+          font-size: 2.2rem;
           color: #202124;
+          font-weight: 600;
         }
         
-        .activity-title {
-          font-size: 1.2rem;
+        .stage-subtitle {
+          font-size: 1.3rem;
           color: #1a73e8;
+          margin-top: 0;
           margin-bottom: 1rem;
           font-weight: 500;
         }
