@@ -529,6 +529,10 @@ io.on('connection', (socket) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.send('Social Mapping WebSocket Server is running');
+});
+
 // Start the server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
