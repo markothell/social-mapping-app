@@ -61,8 +61,19 @@ export default function TagList({
     return tag.status === filter;
   });
 
-  // Sort tags: approved first, then by vote count
+  // Sort tags based on current filter
   const sortedTags = [...filteredTags].sort((a, b) => {
+    // For the 'all' tab, maintain creation time order (using IDs with timestamps)
+    if (filter === 'all') {
+      // Extract the timestamp portion from the ID (assuming format tag_TIMESTAMP_random)
+      const getTimestamp = (tag: Tag) => {
+        const parts = tag.id.split('_');
+        return parts.length > 1 ? parseInt(parts[1]) : 0;
+      };
+      return getTimestamp(a) - getTimestamp(b);
+    }
+    
+    // For other tabs (approved, pending), sort by approval status then votes
     // Approved tags first
     if (a.status === 'approved' && b.status !== 'approved') return -1;
     if (a.status !== 'approved' && b.status === 'approved') return 1;
