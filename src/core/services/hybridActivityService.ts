@@ -248,11 +248,29 @@ export const hybridActivityService = {
     // Create new activity with modern unique ID
     const newActivity = createDefaultActivity(type, settings.entryView?.title || '');
     
-    // Merge provided settings with default settings
-    newActivity.settings = {
-      ...newActivity.settings,
-      ...settings
-    };
+    // Deep merge settings with special handling for mapping and ranking
+    const mergedSettings = { ...newActivity.settings };
+    
+    // Merge entryView and tagCreation settings
+    if (settings.entryView) {
+      mergedSettings.entryView = { ...mergedSettings.entryView, ...settings.entryView };
+    }
+    
+    if (settings.tagCreation) {
+      mergedSettings.tagCreation = { ...mergedSettings.tagCreation, ...settings.tagCreation };
+    }
+    
+    // Handle specific activity type settings
+    if (type === 'mapping' && settings.mapping) {
+      // If this is a mapping activity and mapping settings were provided, use them directly
+      mergedSettings.mapping = { ...mergedSettings.mapping, ...settings.mapping };
+    } else if (type === 'ranking' && settings.ranking) {
+      // If this is a ranking activity and ranking settings were provided, use them directly
+      mergedSettings.ranking = { ...mergedSettings.ranking, ...settings.ranking };
+    }
+    
+    // Apply merged settings
+    newActivity.settings = mergedSettings;
     
     // Set a flag to indicate this activity was just created
     // This will prevent unnecessary fetch attempts in other methods

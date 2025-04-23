@@ -52,11 +52,31 @@ export const activityService = {
   create(type: 'mapping' | 'ranking', settings: any): Activity {
     const newActivity = createDefaultActivity(type, settings.entryView?.title || '');
     
-    // Merge provided settings with default settings
-    newActivity.settings = {
-      ...newActivity.settings,
-      ...settings
-    };
+    // Completely replace mapping settings if provided
+    if (type === 'mapping' && settings.mapping) {
+      // Use a complete replacement approach instead of merging
+      newActivity.settings = {
+        entryView: settings.entryView || newActivity.settings.entryView,
+        tagCreation: settings.tagCreation || newActivity.settings.tagCreation,
+        mapping: settings.mapping
+      };
+    } 
+    // Same for ranking
+    else if (type === 'ranking' && settings.ranking) {
+      newActivity.settings = {
+        entryView: settings.entryView || newActivity.settings.entryView,
+        tagCreation: settings.tagCreation || newActivity.settings.tagCreation,
+        ranking: settings.ranking
+      };
+    }
+    // If no type-specific settings provided, just use the provided settings for common properties
+    else {
+      newActivity.settings = {
+        ...newActivity.settings,
+        entryView: settings.entryView || newActivity.settings.entryView,
+        tagCreation: settings.tagCreation || newActivity.settings.tagCreation
+      };
+    }
     
     const activities = this.getAll();
     activities.push(newActivity);

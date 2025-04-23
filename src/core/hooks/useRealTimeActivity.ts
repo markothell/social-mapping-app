@@ -70,12 +70,18 @@ export function useRealTimeActivity(activityId: string, user: any) {
   
   // Set up real-time connection and event listeners
   useEffect(() => {
-    if (!user || !activityId) return;
-    
-    // Join the activity only if we haven't joined it already
-    if (!hasJoinedRef.current) {
-      joinActivity(activityId, user);
-      hasJoinedRef.current = true;
+    // Reset joined status when user or activityId changes
+    if (user && activityId) {
+      // Only join if not already joined
+      if (!hasJoinedRef.current) {
+        console.log(`Joining activity ${activityId} for user ${user.id}`);
+        joinActivity(activityId, user);
+        hasJoinedRef.current = true;
+      }
+    } else {
+      // If user or activityId is missing, reset the join status
+      hasJoinedRef.current = false;
+      return; // Skip setting up event listeners
     }
     
     // Event listeners for real-time updates
@@ -216,15 +222,20 @@ export function useRealTimeActivity(activityId: string, user: any) {
       
       // Only leave the activity if we joined it
       // Pass false to indicate we don't want to update state during unmount
-      if (hasJoinedRef.current) {
-        console.log(`Cleanup: Leaving activity ${activityId} for user`, user?.id);
+      if (hasJoinedRef.current && user) {
+        console.log(`Cleanup: Leaving activity ${activityId} for user ${user.id}`);
+        // IMPORTANT: Set this to false BEFORE calling leaveActivity to prevent infinite loop
+        const wasJoined = hasJoinedRef.current;
         hasJoinedRef.current = false; // Mark as left to prevent rejoining
         
-        // Call leaveActivity with false to prevent state updates during cleanup
-        try {
-          leaveActivity(false);
-        } catch (error) {
-          console.error('Error during leaveActivity in cleanup:', error);
+        // Only actually call leaveActivity if we were previously joined
+        if (wasJoined) {
+          try {
+            // Use a local variable to avoid the closure capturing the latest ref value
+            leaveActivity(false);
+          } catch (error) {
+            console.error('Error during leaveActivity in cleanup:', error);
+          }
         }
       }
     };

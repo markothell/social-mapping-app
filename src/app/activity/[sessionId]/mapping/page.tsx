@@ -167,7 +167,8 @@ export default function MappingPage({
     yAxisBottomLabel: "Don't Like",
     gridSize: 4,
     enableAnnotations: true,
-    maxAnnotationLength: 280
+    maxAnnotationLength: 280,
+    instruction: 'Position each tag on the grid according to your perspective. You can add comments to explain your choices.'
   };
   
   const completionPercentage = approvedTags.length > 0 
@@ -183,8 +184,11 @@ export default function MappingPage({
           
           <div className="mapping-instructions">
             <p>
-              Position each tag on the grid according to your perspective.
-              {mappingSettings.enableAnnotations && ' You can add comments to explain your choices.'}
+              {localStorage.getItem('mapping_instruction') || 
+                `Position each tag on the grid according to your perspective.${
+                  mappingSettings.enableAnnotations ? ' You can add comments to explain your choices.' : ''
+                }`
+              }
             </p>
           </div>
           

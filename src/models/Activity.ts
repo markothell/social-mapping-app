@@ -82,6 +82,7 @@ export interface ActivitySettings {
     gridSize: number;
     enableAnnotations: boolean;
     maxAnnotationLength: number;
+    instruction?: string;
   };
   ranking?: {
     orderType: 'ascending' | 'descending';
@@ -135,7 +136,8 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
       yAxisBottomLabel: "Don't Like",
       gridSize: 4,
       enableAnnotations: true,
-      maxAnnotationLength: 280
+      maxAnnotationLength: 280,
+      instruction: 'Position each tag on the grid according to your perspective. You can add comments to explain your choices.'
     }
   };
   

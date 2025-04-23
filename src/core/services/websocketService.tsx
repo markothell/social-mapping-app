@@ -462,19 +462,26 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   
   // Function to leave current activity
   const leaveActivity = useCallback((clearState = true) => {
-    if (!currentActivity || !currentUser) return;
+    // Store current values in local variables to prevent access to stale values
+    const activityToLeave = currentActivity;
+    const userLeaving = currentUser;
     
-    console.log(`Leaving activity ${currentActivity}`);
+    if (!activityToLeave || !userLeaving) {
+      console.log('No activity or user to leave');
+      return;
+    }
+    
+    console.log(`Leaving activity ${activityToLeave}`);
     
     // We will always try to send the leave message if a socket exists
     if (socketRef.current) {
       try {
         socketRef.current.emit('leave_activity', { 
-          activityId: currentActivity,
-          userId: currentUser.id,
-          userName: currentUser.name
+          activityId: activityToLeave,
+          userId: userLeaving.id,
+          userName: userLeaving.name
         });
-        console.log(`Sent leave_activity event for user ${currentUser.id} in activity ${currentActivity}`);
+        console.log(`Sent leave_activity event for user ${userLeaving.id} in activity ${activityToLeave}`);
       } catch (error) {
         console.error('Error sending leave_activity event:', error);
       }
