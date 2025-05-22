@@ -77,6 +77,67 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('online', handleOnline);
     };
   }, []);
+
+  // Add connection state tracking to prevent multiple simultaneous operations
+  let isLeavingActivity = false;
+  let leaveActivityTimeout: NodeJS.Timeout | null = null;
+
+  // Fixed leaveActivity function with debouncing
+  const leaveActivity = useCallback((clearState = true) => {
+    if (!currentActivity || !currentUser || isLeavingActivity) {
+      return;
+    }
+    
+    isLeavingActivity = true;
+    
+    // Clear any pending leave operations
+    if (leaveActivityTimeout) {
+      clearTimeout(leaveActivityTimeout);
+    }
+    
+    console.log(`Leaving activity ${currentActivity}`);
+    
+    // Debounce the leave operation
+    leaveActivityTimeout = setTimeout(() => {
+      if (socketRef.current && socketRef.current.connected) {
+        try {
+          socketRef.current.emit('leave_activity', { 
+            activityId: currentActivity,
+            userId: currentUser.id,
+            userName: currentUser.name
+          });
+          console.log(`Sent leave_activity event for user ${currentUser.id} in activity ${currentActivity}`);
+        } catch (error) {
+          console.error('Error sending leave_activity event:', error);
+        }
+      } else {
+        console.log('Cannot send leave_activity: Socket not connected');
+      }
+      
+      // Only update state if explicitly requested
+      if (clearState) {
+        setCurrentActivity(null);
+        setCurrentUser(null);
+      }
+      
+      isLeavingActivity = false;
+    }, 100); // 100ms debounce
+  }, [currentActivity, currentUser]);
+  
+  // Function to send a message
+  const sendMessage = (event: string, data: any) => {
+    if (!offline && isConnected && socketRef.current) {
+      socketRef.current.emit(event, data);
+    } else {
+      console.log(`Queueing message for later: ${event}`);
+      
+      // Queue message for when we reconnect
+      setQueuedMessages(prev => [
+        ...prev,
+        { event, data }
+      ]);
+    }
+  };
   
   // Initialize WebSocket connection only once
   useEffect(() => {
@@ -418,9 +479,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Only leave if we haven't already started leaving
-      if (hasJoinedRef.current && !isLeavingActivity) {
+      /*if (hasJoinedRef.current && !isLeavingActivity) {
         console.log(`Cleanup: Leaving activity ${currentActivity} for user`, currentUser?.id);
         hasJoinedRef.current = false;
+        
+        try {
+          leaveActivity(false);
+        } catch (error) {
+          console.error('Error during leaveActivity in cleanup:', error);
+        }
+      }*/
+
+      if (currentActivity && currentUser && !isLeavingActivity) {
+        console.log(`Cleanup: Leaving activity ${currentActivity} for user`, currentUser?.id);
         
         try {
           leaveActivity(false);
@@ -495,67 +566,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             userName: user.name
           }
         }
-      ]);
-    }
-  };
-  
-  // Add connection state tracking to prevent multiple simultaneous operations
-  let isLeavingActivity = false;
-  let leaveActivityTimeout: NodeJS.Timeout | null = null;
-
-  // Fixed leaveActivity function with debouncing
-  const leaveActivity = useCallback((clearState = true) => {
-    if (!currentActivity || !currentUser || isLeavingActivity) {
-      return;
-    }
-    
-    isLeavingActivity = true;
-    
-    // Clear any pending leave operations
-    if (leaveActivityTimeout) {
-      clearTimeout(leaveActivityTimeout);
-    }
-    
-    console.log(`Leaving activity ${currentActivity}`);
-    
-    // Debounce the leave operation
-    leaveActivityTimeout = setTimeout(() => {
-      if (socketRef.current && socketRef.current.connected) {
-        try {
-          socketRef.current.emit('leave_activity', { 
-            activityId: currentActivity,
-            userId: currentUser.id,
-            userName: currentUser.name
-          });
-          console.log(`Sent leave_activity event for user ${currentUser.id} in activity ${currentActivity}`);
-        } catch (error) {
-          console.error('Error sending leave_activity event:', error);
-        }
-      } else {
-        console.log('Cannot send leave_activity: Socket not connected');
-      }
-      
-      // Only update state if explicitly requested
-      if (clearState) {
-        setCurrentActivity(null);
-        setCurrentUser(null);
-      }
-      
-      isLeavingActivity = false;
-    }, 100); // 100ms debounce
-  }, [currentActivity, currentUser]);
-  
-  // Function to send a message
-  const sendMessage = (event: string, data: any) => {
-    if (!offline && isConnected && socketRef.current) {
-      socketRef.current.emit(event, data);
-    } else {
-      console.log(`Queueing message for later: ${event}`);
-      
-      // Queue message for when we reconnect
-      setQueuedMessages(prev => [
-        ...prev,
-        { event, data }
       ]);
     }
   };

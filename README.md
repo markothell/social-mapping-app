@@ -1,18 +1,19 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Social Mapping App (Frontend + Local Dev Server)
 
-## Getting Started
+This folder contains the Next.js application used for both production deployment (via Vercel) and local development. It includes:
 
-First, run the development server:
+- The frontend app (React + Next.js)
+- The embedded local WebSocket server (for development only)
+- MongoDB dev environment connection
+
+## Local Development
+
+Start MongoDB (or ensure access to Cluster0 on Atlas), then run:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 

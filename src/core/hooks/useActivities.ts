@@ -35,6 +35,16 @@ export function useActivities(filter: 'all' | 'active' | 'completed' = 'all') {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`)
+      .then(res => res.json())
+      .then(status => {
+        if (!status.apiRoutesLoaded) {
+          console.warn("⚠️ API routes are not yet loaded on the backend.");
+        }
+      });
+  }, []);
   
   useEffect(() => {
     loadActivities();
