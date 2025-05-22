@@ -410,27 +410,66 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     
     // Cleanup on unmount
     return () => {
-      // We don't disconnect socket here to prevent reconnection loops
-      // But we need to mark any cleanup to avoid state updates after unmount
       console.log('WebSocketProvider cleanup');
       
-      // Nullify the cleanup effects that might cause setState calls
-      // This ensures that even if socket events fire, we don't update state
+      // Clean up any pending timeouts
+      if (leaveActivityTimeout) {
+        clearTimeout(leaveActivityTimeout);
+      }
+      
+      // Only leave if we haven't already started leaving
+      if (hasJoinedRef.current && !isLeavingActivity) {
+        console.log(`Cleanup: Leaving activity ${currentActivity} for user`, currentUser?.id);
+        hasJoinedRef.current = false;
+        
+        try {
+          leaveActivity(false);
+        } catch (error) {
+          console.error('Error during leaveActivity in cleanup:', error);
+        }
+      }
+      
+      // Clean up socket event listeners to prevent memory leaks
       const cleanupSocket = socketRef.current;
       if (cleanupSocket) {
-        // Remove all listeners that might call setState
         try {
           cleanupSocket.off('connect');
           cleanupSocket.off('disconnect');
           cleanupSocket.off('connect_error');
-          // We don't remove the data event listeners since they don't directly update state
         } catch (error) {
           console.error('Error cleaning up socket event listeners:', error);
         }
       }
     };
-  }, [currentActivity, currentUser, queuedMessages]);
+  }, [currentActivity, currentUser, leaveActivity]);
   
+  // Add connection health monitoring
+  useEffect(() => {
+    if (!socketRef.current) return;
+    
+    const socket = socketRef.current;
+    let healthCheckInterval: NodeJS.Timeout;
+    
+    // Ping server every 30 seconds to maintain connection
+    healthCheckInterval = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('ping');
+      }
+    }, 30000);
+    
+    // Handle pong response
+    socket.on('pong', () => {
+      // Connection is healthy
+    });
+    
+    return () => {
+      if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+      }
+      socket.off('pong');
+    };
+  }, [socketRef.current]);
+
   // Function to join an activity
   const joinActivity = (activityId: string, user: any) => {
     if (!user) return;
@@ -460,41 +499,50 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  // Function to leave current activity
+  // Add connection state tracking to prevent multiple simultaneous operations
+  let isLeavingActivity = false;
+  let leaveActivityTimeout: NodeJS.Timeout | null = null;
+
+  // Fixed leaveActivity function with debouncing
   const leaveActivity = useCallback((clearState = true) => {
-    // Store current values in local variables to prevent access to stale values
-    const activityToLeave = currentActivity;
-    const userLeaving = currentUser;
-    
-    if (!activityToLeave || !userLeaving) {
-      console.log('No activity or user to leave');
+    if (!currentActivity || !currentUser || isLeavingActivity) {
       return;
     }
     
-    console.log(`Leaving activity ${activityToLeave}`);
+    isLeavingActivity = true;
     
-    // We will always try to send the leave message if a socket exists
-    if (socketRef.current) {
-      try {
-        socketRef.current.emit('leave_activity', { 
-          activityId: activityToLeave,
-          userId: userLeaving.id,
-          userName: userLeaving.name
-        });
-        console.log(`Sent leave_activity event for user ${userLeaving.id} in activity ${activityToLeave}`);
-      } catch (error) {
-        console.error('Error sending leave_activity event:', error);
+    // Clear any pending leave operations
+    if (leaveActivityTimeout) {
+      clearTimeout(leaveActivityTimeout);
+    }
+    
+    console.log(`Leaving activity ${currentActivity}`);
+    
+    // Debounce the leave operation
+    leaveActivityTimeout = setTimeout(() => {
+      if (socketRef.current && socketRef.current.connected) {
+        try {
+          socketRef.current.emit('leave_activity', { 
+            activityId: currentActivity,
+            userId: currentUser.id,
+            userName: currentUser.name
+          });
+          console.log(`Sent leave_activity event for user ${currentUser.id} in activity ${currentActivity}`);
+        } catch (error) {
+          console.error('Error sending leave_activity event:', error);
+        }
+      } else {
+        console.log('Cannot send leave_activity: Socket not connected');
       }
-    } else {
-      console.log('Cannot send leave_activity: Socket not available');
-    }
-    
-    // Only update state if explicitly requested (not during unmounting)
-    if (clearState) {
-      // Clear the current activity and user in state
-      setCurrentActivity(null);
-      setCurrentUser(null);
-    }
+      
+      // Only update state if explicitly requested
+      if (clearState) {
+        setCurrentActivity(null);
+        setCurrentUser(null);
+      }
+      
+      isLeavingActivity = false;
+    }, 100); // 100ms debounce
   }, [currentActivity, currentUser]);
   
   // Function to send a message
