@@ -37,7 +37,8 @@ export function useActivities(filter: 'all' | 'active' | 'completed' = 'all') {
   };
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`)
+    const base = process.env.NEXT_PUBLIC_API_URL.replace(/\/api$/, ""); // drop trailing /api
+    fetch(`${base}/health`)
       .then(res => res.json())
       .then(status => {
         if (!status.apiRoutesLoaded) {
