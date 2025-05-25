@@ -40,30 +40,32 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [queuedMessages, setQueuedMessages] = useState<any[]>([]);
   const connectionAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
+  const maxReconnectAttempts = 12;
   
   // Check if we're offline
   useEffect(() => {
     const handleOffline = () => {
       setOffline(true);
-      setIsConnected(false);
+      //setIsConnected(false);
       setError('You are offline. Changes will be saved locally and synced when you reconnect.');
     };
     
     const handleOnline = () => {
       setOffline(false);
-      
-      // Try to reconnect the socket
-      if (socketRef.current) {
-        socketRef.current.connect();
+
+      // if the socket never lost its connection, mark us as connected again
+      if (socketRef.current?.connected) {
+        setIsConnected(true);
       }
-      
-      // Try to sync data
+      setError(null);               // clear the banner message
+
+      // kick the socket if it *was* down
+      socketRef.current?.connect();
+
+      // small delay so the socket handshake finishes
       setTimeout(() => {
-        syncService.syncData().catch(err => {
-          console.error('Error syncing after reconnect:', err);
-        });
-      }, 1000); // Small delay to ensure connection is established
+        syncService.syncData().catch(console.error);
+      }, 1000);
     };
     
     window.addEventListener('offline', handleOffline);
@@ -149,8 +151,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       const socketInstance = io(WEBSOCKET_URL, {
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 2000,
+        reconnectionAttempts: 12,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
         timeout: 10000,
         transports: ['websocket', 'polling']
       });
@@ -162,6 +165,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       socketInstance.on('connect', () => {
         console.log('WebSocket connected');
         setIsConnected(true);
+        setOffline(false);
         setError(null);
         connectionAttempts.current = 0;
         
@@ -184,6 +188,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           
           setQueuedMessages([]);
         }
+      });
+
+      socketInstance.on('reconnect', () => {
+        console.log('WebSocket re-connected');
+        setOffline(false);
+        setError(null);
       });
 
       // Activity-specific event handlers
@@ -424,7 +434,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           console.log('Max reconnection attempts reached');
           setError(`Connection failed after ${maxReconnectAttempts} attempts. Working in offline mode.`);
           setOffline(true);
-          socketInstance.disconnect();
         } else {
           setError(`Connection error: ${err.message}. Attempt ${connectionAttempts.current} of ${maxReconnectAttempts}.`);
         }
@@ -511,6 +520,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           console.error('Error cleaning up socket event listeners:', error);
         }
       }
+    };
+
+    const resume = () => {
+      if (socketRef.current?.disconnected && navigator.onLine) {
+        socketRef.current.connect();
+      }
+    };
+    window.addEventListener('online', resume);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') resume();
+    });
+
+    return () => {
+      window.removeEventListener('online', resume);
+      document.removeEventListener('visibilitychange', resume);
     };
   }, [currentActivity, currentUser, leaveActivity]);
   

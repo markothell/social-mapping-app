@@ -1,0 +1,170 @@
+# Social Mapping App - Architecture & File Reference Guide
+
+## Application Overview
+A real-time collaborative mapping application built with Next.js 15, TypeScript, WebSockets, and MongoDB. Users can create activities, add tags, and map them on a 2D grid.
+
+## Core Architecture Layers
+
+### 1. Frontend (Next.js)
+- **Framework**: Next.js 15 with App Router
+- **State Management**: React hooks + Context API
+- **Real-time**: Socket.io client
+- **Storage**: localStorage with sync to MongoDB
+
+### 2. Backend
+- **WebSocket Server**: Express + Socket.io (websocket-server.js)
+- **Database**: MongoDB with Mongoose
+- **API**: RESTful endpoints via Express
+
+### 3. Key Services
+- **Hybrid Storage**: Local-first with MongoDB sync
+- **Real-time Updates**: WebSocket event system
+- **Offline Support**: Queue-based sync mechanism
+
+## File Structure & Purpose
+
+### 🎯 Core Services (`/src/core/services/`)
+
+#### Real-time & Connection
+- **`websocketService.tsx`** - WebSocket context provider, connection management
+  - *Include for*: Connection issues, real-time problems, socket events
+- **`websocket-server.js`** - Server-side WebSocket handling
+  - *Include for*: Server connection issues, event handling problems
+
+#### Data Management
+- **`activityService.ts`** - Local storage CRUD operations
+  - *Include for*: Local data issues, activity management
+- **`hybridActivityService.ts`** - Orchestrates local/remote storage
+  - *Include for*: Sync issues, data consistency problems
+- **`mongoDbService.ts`** - MongoDB API client
+  - *Include for*: Database connection, API errors
+- **`syncService.ts`** - Handles offline/online synchronization
+  - *Include for*: Sync failures, offline mode issues
+
+### 🪝 Hooks (`/src/core/hooks/`)
+- **`useRealTimeActivity.ts`** - Main hook for activity real-time state
+  - *Include for*: Activity state issues, real-time update problems
+- **`useActivities.ts`** - Hook for activity list management
+  - *Include for*: Dashboard/list view issues
+- **`useLocalStorageService.ts`** - localStorage abstraction
+  - *Include for*: Local storage issues
+
+### 📄 Pages (`/src/app/`)
+
+#### Activity Flow
+1. **`admin/page.tsx`** - Admin dashboard
+   - *Include for*: Activity listing, creation, management issues
+2. **`activity/[sessionId]/page.tsx`** - Activity entry/landing
+   - *Include for*: Join activity issues, participant management
+3. **`activity/[sessionId]/tags/page.tsx`** - Tag creation/voting
+   - *Include for*: Tag-related issues
+4. **`activity/[sessionId]/mapping/page.tsx`** - Mapping interface
+   - *Include for*: Mapping UI issues
+5. **`activity/[sessionId]/mapping-results/page.tsx`** - Results visualization
+   - *Include for*: Results display issues
+
+### 🧩 Components (`/src/components/`)
+
+#### Core UI Components
+- **`ConnectionStatus.tsx`** - Shows connection state
+- **`OfflineIndicator.tsx`** - Offline mode indicator
+- **`ActivityCard.tsx`** - Activity list item
+- **`TagList.tsx`** - Tag display with voting
+- **`MappingGrid.tsx`** - 2D mapping interface
+- **`MappingResultsVisualization.tsx`** - Results display
+
+#### Supporting Components
+- **`EntryForm.tsx`** - User join form
+- **`AdminControls.tsx`** - Admin phase controls
+- **`ParticipantActivityIndicator.tsx`** - Active users display
+
+### 📊 Models & Types (`/src/models/`)
+- **`Activity.ts`** - Core data models and types
+  - *Include for*: Type errors, data structure issues
+
+### 🛠️ Utilities (`/src/utils/`)
+- **`mappingDataUtils.ts`** - Mapping calculations, data processing
+- **`tagColorUtils.ts`** - Tag color management
+
+### 🖥️ Server Files (`/server/`)
+- **`models/Activity.js`** - MongoDB schema
+- **`routes/activities.js`** - REST API endpoints
+- **`.env`** - Environment configuration
+
+## Common Problem Categories
+
+### 🔌 Connection/Real-time Issues
+**Include files:**
+- `websocketService.tsx`
+- `websocket-server.js`
+- `useRealTimeActivity.ts`
+- `ConnectionStatus.tsx`
+- `OfflineIndicator.tsx`
+- `.env` (check URLs)
+
+### 💾 Data Sync Issues
+**Include files:**
+- `hybridActivityService.ts`
+- `syncService.ts`
+- `mongoDbService.ts`
+- `activityService.ts`
+- Relevant page file
+
+### 🎨 UI/Display Issues
+**Include files:**
+- Specific page file
+- Related components
+- `mappingDataUtils.ts` (if mapping-related)
+- CSS/styling sections
+
+### 🚫 Offline Mode Issues
+**Include files:**
+- `syncService.ts`
+- `OfflineIndicator.tsx`
+- `hybridActivityService.ts`
+- `websocketService.tsx`
+
+### 📝 CRUD Operations
+**Include files:**
+- `hybridActivityService.ts`
+- `mongoDbService.ts`
+- `server/routes/activities.js`
+- Relevant page/component
+
+### 🔐 User/Participant Issues
+**Include files:**
+- `activity/[sessionId]/page.tsx`
+- `ParticipantActivityIndicator.tsx`
+- `useRealTimeActivity.ts`
+- `websocket-server.js`
+
+## Event Flow Diagram
+
+```
+User Action → Component → Hook → Service → WebSocket/API → MongoDB
+     ↑                                            ↓
+     ←────────── Real-time Update ←───────────────
+```
+
+## Key Event Names
+- `join_activity` / `leave_activity`
+- `add_tag` / `vote_tag` / `delete_tag`
+- `update_mapping` / `change_phase`
+- `activity_updated` / `participants_updated`
+
+## Debugging Tips
+
+1. **Check Console**: Look for WebSocket connection logs
+2. **Check Network Tab**: Verify API calls and WebSocket frames
+3. **Check localStorage**: Inspect `app_activities_list`
+4. **Server Logs**: Look for connection/disconnection patterns
+5. **MongoDB**: Verify data persistence
+
+## When Reporting Issues
+
+Provide:
+1. **Error messages** from console
+2. **Network failures** from Network tab
+3. **Relevant server logs**
+4. **Steps to reproduce**
+5. **Files from relevant category above**
