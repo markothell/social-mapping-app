@@ -29,9 +29,16 @@ export function useRealTimeActivity(activityId: string, user: any) {
   const [participants, setParticipants] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   
-  // Using a ref to track if we've already joined this activity
-  // This prevents infinite loops on cleanup
+  // Using refs to track state without causing effect re-runs
   const hasJoinedRef = useRef(false);
+  const currentActivityRef = useRef<string | null>(null);
+  const currentUserRef = useRef<any>(null);
+  
+  // Update refs when props change
+  useEffect(() => {
+    currentActivityRef.current = activityId;
+    currentUserRef.current = user;
+  }, [activityId, user]);
   
   // Load initial activity data
   useEffect(() => {
@@ -70,26 +77,21 @@ export function useRealTimeActivity(activityId: string, user: any) {
   
   // Set up real-time connection and event listeners
   useEffect(() => {
-    // Reset joined status when user or activityId changes
-    if (user && activityId) {
-      // Only join if not already joined
-      if (!hasJoinedRef.current) {
-        console.log(`Joining activity ${activityId} for user ${user.id}`);
-        joinActivity(activityId, user);
-        hasJoinedRef.current = true;
-      }
-    } else {
-      // If user or activityId is missing, reset the join status
-      hasJoinedRef.current = false;
-      return; // Skip setting up event listeners
+    if (!user || !activityId) return;
+    
+    // Join the activity only if we haven't joined it already
+    if (!hasJoinedRef.current && isConnected) {
+      console.log(`Joining activity ${activityId} for user ${user.id}`);
+      joinActivity(activityId, user);
+      hasJoinedRef.current = true;
     }
     
     // Event listeners for real-time updates
     const handleActivityUpdated = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
+      if (detail.activityId === currentActivityRef.current) {
         // Refresh the activity data
-        hybridActivityService.getById(activityId).then(activity => {
+        hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setActivity(activity);
             setParticipants(activity.participants || []);
@@ -100,9 +102,9 @@ export function useRealTimeActivity(activityId: string, user: any) {
     
     const handleParticipantsUpdated = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
+      if (detail.activityId === currentActivityRef.current) {
         // Refresh the activity data to get updated participants
-        hybridActivityService.getById(activityId).then(activity => {
+        hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setParticipants(activity.participants || []);
           }
@@ -110,12 +112,11 @@ export function useRealTimeActivity(activityId: string, user: any) {
       }
     };
     
-    // New handler for manual participant refresh events
     const handleRefreshParticipants = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
-        console.log(`Manual refresh of participants for activity ${activityId}`);
-        hybridActivityService.getById(activityId).then(activity => {
+      if (detail.activityId === currentActivityRef.current) {
+        console.log(`Manual refresh of participants for activity ${currentActivityRef.current}`);
+        hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setParticipants(activity.participants || []);
           }
@@ -125,8 +126,8 @@ export function useRealTimeActivity(activityId: string, user: any) {
     
     const handleTagAdded = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
-        console.log(`Received tag_added event for activity ${activityId}, tag ${detail.tagId}`);
+      if (detail.activityId === currentActivityRef.current) {
+        console.log(`Received tag_added event for activity ${currentActivityRef.current}, tag ${detail.tagId}`);
         
         // Check if we already have this tag before refreshing
         if (activity && activity.tags.some(tag => tag.id === detail.tagId)) {
@@ -135,12 +136,12 @@ export function useRealTimeActivity(activityId: string, user: any) {
         }
         
         // Refresh the activity data
-        hybridActivityService.getById(activityId).then(updatedActivity => {
+        hybridActivityService.getById(currentActivityRef.current).then(updatedActivity => {
           if (updatedActivity) {
             // Before updating state, check for duplicates
             const uniqueTags = [...new Map(updatedActivity.tags.map(tag => [tag.id, tag])).values()];
             if (uniqueTags.length !== updatedActivity.tags.length) {
-              console.warn(`Duplicate tags detected in activity ${activityId}, removing duplicates`);
+              console.warn(`Duplicate tags detected in activity ${currentActivityRef.current}, removing duplicates`);
               updatedActivity.tags = uniqueTags;
             }
             
@@ -152,9 +153,9 @@ export function useRealTimeActivity(activityId: string, user: any) {
     
     const handleTagVoted = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
+      if (detail.activityId === currentActivityRef.current) {
         // Refresh the activity data to get updated tags
-        hybridActivityService.getById(activityId).then(activity => {
+        hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setActivity(activity);
           }
@@ -164,9 +165,9 @@ export function useRealTimeActivity(activityId: string, user: any) {
     
     const handleTagDeleted = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
+      if (detail.activityId === currentActivityRef.current) {
         // Refresh the activity data to get updated tags
-        hybridActivityService.getById(activityId).then(activity => {
+        hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setActivity(activity);
           }
@@ -176,9 +177,9 @@ export function useRealTimeActivity(activityId: string, user: any) {
     
     const handleMappingUpdated = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
+      if (detail.activityId === currentActivityRef.current) {
         // Refresh the activity data to get updated mappings
-        hybridActivityService.getById(activityId).then(activity => {
+        hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setActivity(activity);
           }
@@ -188,13 +189,22 @@ export function useRealTimeActivity(activityId: string, user: any) {
     
     const handlePhaseChanged = (event: CustomEvent) => {
       const detail = event.detail;
-      if (detail.activityId === activityId) {
+      if (detail.activityId === currentActivityRef.current) {
         // Refresh the activity data to get updated phase
-        hybridActivityService.getById(activityId).then(activity => {
+        hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setActivity(activity);
           }
         });
+      }
+    };
+    
+    // Handle connection status changes
+    const handleConnectionChange = () => {
+      // Only rejoin if we were previously joined and now connected
+      if (hasJoinedRef.current && isConnected && currentUserRef.current && currentActivityRef.current) {
+        console.log(`Reconnected - rejoining activity ${currentActivityRef.current}`);
+        joinActivity(currentActivityRef.current, currentUserRef.current);
       }
     };
     
@@ -220,26 +230,19 @@ export function useRealTimeActivity(activityId: string, user: any) {
       window.removeEventListener('mapping_updated', handleMappingUpdated as EventListener);
       window.removeEventListener('phase_changed', handlePhaseChanged as EventListener);
       
-      // Only leave the activity if we joined it
-      // Pass false to indicate we don't want to update state during unmount
-      if (hasJoinedRef.current && user) {
-        console.log(`Cleanup: Leaving activity ${activityId} for user ${user.id}`);
-        // IMPORTANT: Set this to false BEFORE calling leaveActivity to prevent infinite loop
-        const wasJoined = hasJoinedRef.current;
-        hasJoinedRef.current = false; // Mark as left to prevent rejoining
+      // Only leave the activity when the component unmounts or activityId changes
+      if (hasJoinedRef.current && currentActivityRef.current) {
+        console.log(`Cleanup: Leaving activity ${currentActivityRef.current} for user`, currentUserRef.current?.id);
+        hasJoinedRef.current = false;
         
-        // Only actually call leaveActivity if we were previously joined
-        if (wasJoined) {
-          try {
-            // Use a local variable to avoid the closure capturing the latest ref value
-            leaveActivity(false);
-          } catch (error) {
-            console.error('Error during leaveActivity in cleanup:', error);
-          }
+        try {
+          leaveActivity(false);
+        } catch (error) {
+          console.error('Error during leaveActivity in cleanup:', error);
         }
       }
     };
-  }, [activityId, user, joinActivity, leaveActivity]);
+  }, [activityId, user?.id, isConnected]); // Simplified dependencies
   
   // Handler function for adding a tag
   const addTag = useCallback(async (tag: any) => {
