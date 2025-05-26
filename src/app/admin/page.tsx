@@ -43,6 +43,10 @@ export default function AdminDashboardPage() {
       }
     }
   };
+
+  const handleEditActivity = (activityId: string) => {
+    router.push(`/admin/edit/${activityId}`);
+  };
   
   return (
     <div className="activity-layout">
@@ -105,6 +109,7 @@ export default function AdminDashboardPage() {
                     onNavigate={() => router.push(`/activity/${activity.id}`)}
                     onDelete={() => handleDeleteActivity(activity.id)}
                     onComplete={() => handleCompleteActivity(activity.id)}
+                    onEdit={() => handleEditActivity(activity.id)}
                   />
                 ))}
               </div>

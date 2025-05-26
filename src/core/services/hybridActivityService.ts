@@ -575,6 +575,42 @@ export const hybridActivityService = {
       return activity;
     });
   },
+
+  /**
+   * Update activity settings
+   */
+  async updateSettings(activityId: string, newSettings: any): Promise<boolean> {
+    const updatedActivity = await this.update(activityId, activity => {
+      // Deep merge the settings to preserve existing nested properties
+      activity.settings = {
+        ...activity.settings,
+        entryView: {
+          ...activity.settings.entryView,
+          ...newSettings.entryView
+        },
+        tagCreation: {
+          ...activity.settings.tagCreation,
+          ...newSettings.tagCreation
+        },
+        mapping: {
+          ...activity.settings.mapping,
+          ...newSettings.mapping
+        },
+        ranking: {
+          ...activity.settings.ranking,
+          ...newSettings.ranking
+        },
+        results: {
+          ...activity.settings.results,
+          ...newSettings.results
+        }
+      };
+      activity.updatedAt = new Date();
+      return activity;
+    });
+    
+    return updatedActivity !== null;
+  },
   
   /**
    * Synchronize pending changes with the server

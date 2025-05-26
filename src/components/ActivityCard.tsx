@@ -22,13 +22,15 @@ interface ActivityCardProps {
   onNavigate: () => void;
   onDelete: () => void;
   onComplete: () => void;
+  onEdit?: () => void;
 }
 
 export default function ActivityCard({ 
   activity, 
   onNavigate, 
   onDelete, 
-  onComplete 
+  onComplete,
+  onEdit
 }: ActivityCardProps) {
   
   const formatDate = (date: Date) => {
@@ -60,6 +62,14 @@ export default function ActivityCard({
       </div>
       
       <div className="activity-actions" onClick={(e) => e.stopPropagation()}>
+        {onEdit && (
+          <button
+            onClick={onEdit}
+            className="edit-button"
+          >
+            Edit
+          </button>
+        )}
         {activity.status === 'active' && (
           <button
             onClick={onComplete}
@@ -132,6 +142,15 @@ export default function ActivityCard({
           padding: 0.5rem 1rem;
           cursor: pointer;
           font-size: 0.9rem;
+        }
+
+        .edit-button {
+          background-color: #4285f4;
+          color: white;
+        }
+
+        .edit-button:hover {
+          background-color: #3367d6;
         }
 
         .complete-button {

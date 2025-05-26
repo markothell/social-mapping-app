@@ -78,28 +78,40 @@ const rankingSchema = new Schema({
 const settingsSchema = new Schema({
   entryView: {
     title: String,
+    hostName: String,
     description: String
   },
   tagCreation: {
+    coreQuestion: String,
     instruction: String,
     enableVoting: { type: Boolean, default: true },
     voteThreshold: { type: Number, default: 1 }
   },
   mapping: {
+    coreQuestion: String,
     xAxisLabel: String,
     xAxisLeftLabel: String,
     xAxisRightLabel: String,
+    xAxisMinLabel: String,
+    xAxisMaxLabel: String,
     yAxisLabel: String,
     yAxisTopLabel: String,
     yAxisBottomLabel: String,
+    yAxisMinLabel: String,
+    yAxisMaxLabel: String,
     gridSize: { type: Number, default: 4 },
     enableAnnotations: { type: Boolean, default: true },
-    maxAnnotationLength: { type: Number, default: 280 }
+    maxAnnotationLength: { type: Number, default: 280 },
+    instruction: String,
+    contextInstructions: String
   },
   ranking: {
     orderType: { type: String, enum: ['ascending', 'descending'], default: 'ascending' },
     context: String,
     topRankMeaning: String
+  },
+  results: {
+    requireReciprocalSharing: { type: Boolean, default: false }
   }
 });
 

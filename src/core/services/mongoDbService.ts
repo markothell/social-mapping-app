@@ -41,9 +41,9 @@ function structureSanitizeForMongoDB(data: any) {
     };
   }
   
-  // Ensure required settings exist based on activity type
-  if (sanitized.type === 'mapping' && !sanitized.settings.mapping) {
-    sanitized.settings.mapping = {
+  // Ensure required settings exist based on activity type - use merge instead of replace
+  if (sanitized.type === 'mapping') {
+    const defaultMapping = {
       xAxisLabel: 'Knowledge',
       xAxisLeftLabel: "Don't Know",
       xAxisRightLabel: 'Know',
@@ -54,24 +54,34 @@ function structureSanitizeForMongoDB(data: any) {
       enableAnnotations: true,
       maxAnnotationLength: 280
     };
+    sanitized.settings.mapping = {
+      ...defaultMapping,
+      ...sanitized.settings.mapping
+    };
   }
   
-  if (sanitized.type === 'ranking' && !sanitized.settings.ranking) {
-    sanitized.settings.ranking = {
+  if (sanitized.type === 'ranking') {
+    const defaultRanking = {
       orderType: 'ascending',
       context: 'of importance',
       topRankMeaning: 'most important'
     };
-  }
-  
-  // Ensure tag creation settings exist
-  if (!sanitized.settings.tagCreation) {
-    sanitized.settings.tagCreation = {
-      instruction: 'Add tags for the activity',
-      enableVoting: true,
-      voteThreshold: 2
+    sanitized.settings.ranking = {
+      ...defaultRanking,
+      ...sanitized.settings.ranking
     };
   }
+  
+  // Ensure tag creation settings exist - use merge instead of replace
+  const defaultTagCreation = {
+    instruction: 'Add tags for the activity',
+    enableVoting: true,
+    voteThreshold: 2
+  };
+  sanitized.settings.tagCreation = {
+    ...defaultTagCreation,
+    ...sanitized.settings.tagCreation
+  };
   
   // Ensure these arrays exist
   sanitized.participants = sanitized.participants || [];
