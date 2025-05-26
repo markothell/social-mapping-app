@@ -24,6 +24,7 @@ export default function ActivityPage({
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSwitchingUser, setIsSwitchingUser] = useState(false);
   
   // Unwrap params correctly
   const unwrappedParams = useParams(params);
@@ -59,6 +60,15 @@ export default function ActivityPage({
   } = useRealTimeActivity(sessionId, user);
 
   const handleSwitchUser = () => {
+    setIsSwitchingUser(true);
+  };
+  
+  const handleCancelSwitch = () => {
+    setIsSwitchingUser(false);
+  };
+  
+  const handleSwitchUserJoin = (name: string) => {
+    // First leave the current user if exists
     if (user && activity) {
       console.log(`User ${user.name} (${user.id}) is leaving activity ${activity.id}`);
       
@@ -75,21 +85,15 @@ export default function ActivityPage({
       });
       
       // Force a refresh of the participants list after a short delay
-      // This ensures the UI updates even if the websocket message is missed
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('refresh_participants', {
           detail: { activityId }
         }));
       }, 500);
-      
-      // Clear user data
-      localStorage.removeItem('user');
-      setUser(null);
-    } else {
-      // Just clear user data if no activity or user
-      localStorage.removeItem('user');
-      setUser(null);
     }
+    
+    // Then join with the new name
+    handleJoin(name);
   };
   
   // Handle joining the activity
@@ -107,6 +111,12 @@ export default function ActivityPage({
     
     // Set user and reload the page
     setUser(userData);
+    
+    // Trigger custom event to update user display in layout
+    window.dispatchEvent(new CustomEvent('userChanged'));
+    
+    // Reset switching state
+    setIsSwitchingUser(false);
     
     // Navigate to appropriate phase
     if (activity.phase === 'gathering' || activity.phase === 'tagging') {
@@ -175,13 +185,12 @@ export default function ActivityPage({
         {/* Show connection status */}
         <ConnectionStatus />
         
-        {/* Show active participants */}
-        <ParticipantActivityIndicator participants={participants} />
-        
-        {!user ? (
+        {!user || isSwitchingUser ? (
           <EntryForm 
-            user={user} 
-            onJoin={handleJoin} 
+            user={isSwitchingUser ? user : null} 
+            onJoin={isSwitchingUser ? handleSwitchUserJoin : handleJoin}
+            onCancel={isSwitchingUser ? handleCancelSwitch : undefined}
+            showCancel={isSwitchingUser}
           />
         ) : (
           <div className="participant-info">

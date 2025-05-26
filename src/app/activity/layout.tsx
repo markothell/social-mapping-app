@@ -25,15 +25,34 @@ export default function ActivityLayout({
 
   // Only access localStorage after the component has mounted (client-side)
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        setUserName(user.name || 'User');
+    const updateUserName = () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setUserName(user.name || 'User');
+        } else {
+          setUserName('Guest');
+        }
+      } catch (e) {
+        console.error('Error getting user from localStorage:', e);
+        setUserName('Guest');
       }
-    } catch (e) {
-      console.error('Error getting user from localStorage:', e);
-    }
+    };
+
+    // Initial load
+    updateUserName();
+
+    // Listen for storage changes
+    window.addEventListener('storage', updateUserName);
+    
+    // Listen for custom user change events
+    window.addEventListener('userChanged', updateUserName);
+
+    return () => {
+      window.removeEventListener('storage', updateUserName);
+      window.removeEventListener('userChanged', updateUserName);
+    };
   }, []);
 
   return (

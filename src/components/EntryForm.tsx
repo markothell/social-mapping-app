@@ -8,9 +8,11 @@ interface EntryFormProps {
     name?: string;
   } | null;
   onJoin: (name: string) => void;
+  onCancel?: () => void;
+  showCancel?: boolean;
 }
 
-export default function EntryForm({ user, onJoin }: EntryFormProps) {
+export default function EntryForm({ user, onJoin, onCancel, showCancel }: EntryFormProps) {
   const [userName, setUserName] = useState('');
   
   useEffect(() => {
@@ -48,9 +50,16 @@ export default function EntryForm({ user, onJoin }: EntryFormProps) {
           />
         </div>
         
-        <button type="submit" className="join-button">
-          Join Activity
-        </button>
+        <div className="form-buttons">
+          <button type="submit" className="join-button">
+            {user ? 'Update Name' : 'Join Activity'}
+          </button>
+          {showCancel && onCancel && (
+            <button type="button" className="cancel-button" onClick={onCancel}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <style jsx>{`
@@ -88,8 +97,13 @@ export default function EntryForm({ user, onJoin }: EntryFormProps) {
           font-size: 1rem;
         }
         
+        .form-buttons {
+          display: flex;
+          gap: 0.75rem;
+        }
+        
         .join-button {
-          width: 100%;
+          flex: 1;
           padding: 0.75rem;
           background-color: #1a73e8;
           color: white;
@@ -102,6 +116,21 @@ export default function EntryForm({ user, onJoin }: EntryFormProps) {
         
         .join-button:hover {
           background-color: #1765cc;
+        }
+        
+        .cancel-button {
+          padding: 0.75rem 1.5rem;
+          background-color: #f1f3f4;
+          color: #202124;
+          border: none;
+          border-radius: 4px;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .cancel-button:hover {
+          background-color: #e8eaed;
         }
       `}</style>
     </div>
