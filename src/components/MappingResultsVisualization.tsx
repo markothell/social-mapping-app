@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import ResultsVisualizationGrid from './ResultsVisualizationGrid';
 import TagDetailsPanel from './TagDetailsPanel';
 import { 
-  calculateQuadrantStats, 
   calculateAveragePositions,
   calculateStandardDeviations,
   getTagAnnotations
@@ -77,6 +76,7 @@ export default function MappingResultsVisualization({
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [hoveredComment, setHoveredComment] = useState<{ tagId: string | null, userId: string | null }>({ tagId: null, userId: null });
+  const [hoveredTag, setHoveredTag] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'statistics' | 'comments' | 'individual-mappings'>('statistics');
   
   // Use a ref to track if this is the first render
@@ -101,10 +101,6 @@ export default function MappingResultsVisualization({
     ...(settings || {})
   };
   
-  // Compute these values only when needed inputs change
-  const quadrantStats = useMemo(() => {
-    return calculateQuadrantStats(mappings, tags, mappingSettings);
-  }, [mappings, tags, mappingSettings]);
   
   // Get aggregate positions or participant positions
   const positions = useMemo(() => {
@@ -364,6 +360,7 @@ export default function MappingResultsVisualization({
               setSelectedTag(tagId === selectedTag ? null : tagId);
             }
           }}
+          onHoverTag={(tagId) => setHoveredTag(tagId)}
           participantName={viewMode === 'individual' ? 
             mappings.find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
         />
@@ -403,7 +400,7 @@ export default function MappingResultsVisualization({
                         return (
                           <div 
                             key={idx} 
-                            className="annotation-item"
+                            className={`annotation-item ${hoveredTag === selectedTag ? 'tag-hovered' : ''}`}
                             onClick={() => userId && handleCommentClick(userId)}
                             onMouseEnter={() => setHoveredComment({ tagId: selectedTag, userId: userId || null })}
                             onMouseLeave={() => setHoveredComment({ tagId: null, userId: null })}
@@ -439,7 +436,7 @@ export default function MappingResultsVisualization({
                         {participantComments.map((comment, idx) => (
                           <div 
                             key={idx} 
-                            className="annotation-item"
+                            className={`annotation-item ${hoveredTag === comment.tagId ? 'tag-hovered' : ''}`}
                             onMouseEnter={() => setHoveredComment({ tagId: comment.tagId, userId: selectedParticipant })}
                             onMouseLeave={() => setHoveredComment({ tagId: null, userId: null })}
                           >
@@ -464,105 +461,17 @@ export default function MappingResultsVisualization({
           
           {/* Statistics Tab */}
           {activeTab === 'statistics' && (
-            <>
-              <div className="quadrant-stats">
-                <h4>Quadrant Analysis</h4>
-                <div className="quadrant-grid">
-                  <div className="quadrant q2">
-                    <div className="quadrant-label">
-                      {mappingSettings.xAxisLeftLabel} / {mappingSettings.yAxisTopLabel}
-                      <span className="count">{quadrantStats.q2?.count || 0}</span>
-                    </div>
-                    <div className="tag-list">
-                      {quadrantStats.q2?.tags?.slice(0, 3).map((tag: any) => (
-                        <div 
-                          key={tag.id} 
-                          className="tag-pill"
-                          onClick={() => setSelectedTag(tag.id)}
-                        >
-                          {tag.text}
-                        </div>
-                      ))}
-                      {(quadrantStats.q2?.tags?.length || 0) > 3 && (
-                        <div className="more-tags">+{quadrantStats.q2?.tags?.length - 3} more</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="quadrant q1">
-                    <div className="quadrant-label">
-                      {mappingSettings.xAxisRightLabel} / {mappingSettings.yAxisTopLabel}
-                      <span className="count">{quadrantStats.q1?.count || 0}</span>
-                    </div>
-                    <div className="tag-list">
-                      {quadrantStats.q1?.tags?.slice(0, 3).map((tag: any) => (
-                        <div 
-                          key={tag.id} 
-                          className="tag-pill"
-                          onClick={() => setSelectedTag(tag.id)}
-                        >
-                          {tag.text}
-                        </div>
-                      ))}
-                      {(quadrantStats.q1?.tags?.length || 0) > 3 && (
-                        <div className="more-tags">+{quadrantStats.q1?.tags?.length - 3} more</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="quadrant q3">
-                    <div className="quadrant-label">
-                      {mappingSettings.xAxisLeftLabel} / {mappingSettings.yAxisBottomLabel}
-                      <span className="count">{quadrantStats.q3?.count || 0}</span>
-                    </div>
-                    <div className="tag-list">
-                      {quadrantStats.q3?.tags?.slice(0, 3).map((tag: any) => (
-                        <div 
-                          key={tag.id} 
-                          className="tag-pill"
-                          onClick={() => setSelectedTag(tag.id)}
-                        >
-                          {tag.text}
-                        </div>
-                      ))}
-                      {(quadrantStats.q3?.tags?.length || 0) > 3 && (
-                        <div className="more-tags">+{quadrantStats.q3?.tags?.length - 3} more</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="quadrant q4">
-                    <div className="quadrant-label">
-                      {mappingSettings.xAxisRightLabel} / {mappingSettings.yAxisBottomLabel}
-                      <span className="count">{quadrantStats.q4?.count || 0}</span>
-                    </div>
-                    <div className="tag-list">
-                      {quadrantStats.q4?.tags?.slice(0, 3).map((tag: any) => (
-                        <div 
-                          key={tag.id} 
-                          className="tag-pill"
-                          onClick={() => setSelectedTag(tag.id)}
-                        >
-                          {tag.text}
-                        </div>
-                      ))}
-                      {(quadrantStats.q4?.tags?.length || 0) > 3 && (
-                        <div className="more-tags">+{quadrantStats.q4?.tags?.length - 3} more</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            
-              <div className="mapping-summary">
-                <h4>Overall Statistics</h4>
-                <ul>
-                  <li>Total tags: {tags.length}</li>
-                  <li>Total participants: {participants.length}</li>
-                  <li>Completed mappings: {mappings.filter(m => m.isComplete).length}</li>
-                  <li>Average tags mapped per participant: {mappings.length > 0 
-                    ? (mappings.reduce((sum, m) => sum + m.positions.length, 0) / mappings.length).toFixed(1) 
-                    : '0'}</li>
-                </ul>
-              </div>
-            </>
+            <div className="mapping-summary">
+              <h4>Overall Statistics</h4>
+              <ul>
+                <li>Total tags: {tags.length}</li>
+                <li>Total participants: {participants.length}</li>
+                <li>Completed mappings: {mappings.filter(m => m.isComplete).length}</li>
+                <li>Average tags mapped per participant: {mappings.length > 0 
+                  ? (mappings.reduce((sum, m) => sum + m.positions.length, 0) / mappings.length).toFixed(1) 
+                  : '0'}</li>
+              </ul>
+            </div>
           )}
         </div>
       </div>
@@ -734,6 +643,10 @@ export default function MappingResultsVisualization({
           background-color: #f8f9fa;
         }
         
+        .annotation-item.tag-hovered {
+          background-color: #f1f3f4;
+        }
+        
         .annotation-content {
           font-size: 0.9rem;
           color: #202124;
@@ -778,90 +691,6 @@ export default function MappingResultsVisualization({
         
         .clear-selection:hover {
           background-color: #e8eaed;
-        }
-        
-        .quadrant-stats {
-          margin-bottom: 1.5rem;
-        }
-        
-        .quadrant-stats h4 {
-          margin-top: 0;
-          margin-bottom: 0.75rem;
-          font-size: 1.1rem;
-        }
-        
-        .quadrant-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: 1fr 1fr;
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-        }
-        
-        .quadrant {
-          background-color: #f8f9fa;
-          border-radius: 8px;
-          padding: 0.75rem;
-        }
-        
-        .quadrant.q1 {
-          border-left: 4px solid #34a853;
-        }
-        
-        .quadrant.q2 {
-          border-left: 4px solid #4285f4;
-        }
-        
-        .quadrant.q3 {
-          border-left: 4px solid #ea4335;
-        }
-        
-        .quadrant.q4 {
-          border-left: 4px solid #fbbc04;
-        }
-        
-        .quadrant-label {
-          font-size: 0.85rem;
-          font-weight: 500;
-          margin-bottom: 0.5rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .quadrant-label .count {
-          background-color: #e8eaed;
-          border-radius: 10px;
-          padding: 0.1rem 0.5rem;
-          font-size: 0.75rem;
-        }
-        
-        .tag-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-        
-        .tag-pill {
-          background-color: #e8f0fe;
-          color: #1a73e8;
-          border-radius: 12px;
-          padding: 0.2rem 0.5rem;
-          font-size: 0.75rem;
-          cursor: pointer;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 100%;
-        }
-        
-        .tag-pill:hover {
-          background-color: #d2e3fc;
-        }
-        
-        .more-tags {
-          font-size: 0.75rem;
-          color: #5f6368;
         }
         
         .mapping-summary {

@@ -41,6 +41,7 @@ interface ResultsVisualizationGridProps {
   tags: Tag[];
   mappings: Mapping[];
   onSelectTag: (tagId: string) => void;
+  onHoverTag?: (tagId: string | null) => void;
   participantName?: string;
 }
 
@@ -54,6 +55,7 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
   tags,
   mappings,
   onSelectTag,
+  onHoverTag,
   participantName
 }: ResultsVisualizationGridProps) {
   // State to track which individual mapping is being hovered
@@ -177,6 +179,14 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
                   zIndex: viewMode === 'individual' && hoveredComment?.tagId === tagId ? 25 : (selectedTag === tagId ? 20 : 5)
                 }}
                 onClick={() => onSelectTag(tagId)}
+                onMouseEnter={() => {
+                  setHoveredMapping(tagId);
+                  onHoverTag?.(tagId);
+                }}
+                onMouseLeave={() => {
+                  setHoveredMapping(null);
+                  onHoverTag?.(null);
+                }}
                 title={position.text} // Show full text on hover
               >
                 <div 
