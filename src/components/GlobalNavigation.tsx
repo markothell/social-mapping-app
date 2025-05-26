@@ -12,10 +12,11 @@ interface NavigationStep {
 
 interface GlobalNavigationProps {
   sessionId?: string;
+  activityTitle?: string;
   onNavigate?: (path: string) => void;
 }
 
-export default function GlobalNavigation({ sessionId, onNavigate }: GlobalNavigationProps) {
+export default function GlobalNavigation({ sessionId, activityTitle, onNavigate }: GlobalNavigationProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [currentStep, setCurrentStep] = useState(0);
@@ -53,7 +54,7 @@ export default function GlobalNavigation({ sessionId, onNavigate }: GlobalNaviga
     <div className="global-navigation">
       <div className="nav-container">
         <div className="nav-brand">
-          <span className="brand-text">Social_Map</span>
+          <span className="brand-text">Social_Map.{activityTitle || 'activity'}</span>
           <span className="brand-subtitle">prosperity</span>
         </div>
         

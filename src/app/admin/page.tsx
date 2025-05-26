@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import ActivityCard from '@/components/ActivityCard';
 import { hybridActivityService } from '@/core/services/hybridActivityService';
 import ConnectionStatus from '@/components/ConnectionStatus';
@@ -44,71 +45,129 @@ export default function AdminDashboardPage() {
   };
   
   return (
-    <div className="admin-dashboard">
-      <header className="dashboard-header">
-        <h1>Activity Administration</h1>
-        <button 
-          className="create-button"
-          onClick={handleCreateActivity}
-        >
-          Create New Activity
-        </button>
+    <div className="activity-layout">
+      <header className="app-header">
+        <div className="container">
+          <Link href="/" className="logo">
+            Social Insight Tools
+          </Link>
+        </div>
       </header>
       
-      <div className="filter-controls">
-        <button 
-          className={activeFilter === 'all' ? 'active' : ''}
-          onClick={() => setActiveFilter('all')}
-        >
-          All Activities
-        </button>
-        <button 
-          className={activeFilter === 'active' ? 'active' : ''}
-          onClick={() => setActiveFilter('active')}
-        >
-          Active 
-        </button>
-        <button 
-          className={activeFilter === 'completed' ? 'active' : ''}
-          onClick={() => setActiveFilter('completed')}
-        >
-          Completed
-        </button>
-      </div>
+      <main className="app-content">
+        <div className="content-wrapper">
+          <div className="admin-dashboard">
+            <div className="dashboard-header">
+              <h1>Your Maps</h1>
+              <button 
+                className="create-button"
+                onClick={handleCreateActivity}
+              >
+                Create New Activity
+              </button>
+            </div>
       
-      {loading ? (
-        <div className="loading-container">Loading activities...</div>
-      ) : error ? (
-        <div className="error-message">{error}</div>
-      ) : activities.length === 0 ? (
-        <div className="no-activities">
-          <p>No activities found. Click "Create New Activity" to get started.</p>
-        </div>
-      ) : (
-        <div className="activity-list">
-          {activities.map((activity) => (
-            <ActivityCard 
-              key={activity.id} 
-              activity={activity} 
-              onNavigate={() => router.push(`/activity/${activity.id}`)}
-              onDelete={() => handleDeleteActivity(activity.id)}
-              onComplete={() => handleCompleteActivity(activity.id)}
-            />
-          ))}
-        </div>
-      )}
+            <div className="filter-controls">
+              <button 
+                className={activeFilter === 'all' ? 'active' : ''}
+                onClick={() => setActiveFilter('all')}
+              >
+                All Activities
+              </button>
+              <button 
+                className={activeFilter === 'active' ? 'active' : ''}
+                onClick={() => setActiveFilter('active')}
+              >
+                Active 
+              </button>
+              <button 
+                className={activeFilter === 'completed' ? 'active' : ''}
+                onClick={() => setActiveFilter('completed')}
+              >
+                Completed
+              </button>
+            </div>
+      
+            {loading ? (
+              <div className="loading-container">Loading activities...</div>
+            ) : error ? (
+              <div className="error-message">{error}</div>
+            ) : activities.length === 0 ? (
+              <div className="no-activities">
+                <p>No activities found. Click "Create New Activity" to get started.</p>
+              </div>
+            ) : (
+              <div className="activity-list">
+                {activities.map((activity) => (
+                  <ActivityCard 
+                    key={activity.id} 
+                    activity={activity} 
+                    onNavigate={() => router.push(`/activity/${activity.id}`)}
+                    onDelete={() => handleDeleteActivity(activity.id)}
+                    onComplete={() => handleCompleteActivity(activity.id)}
+                  />
+                ))}
+              </div>
+            )}
 
-      <ConnectionStatus 
-        status={{ 
-          isConnected, 
-          error: connectionError 
-        }} 
-      />
+            <ConnectionStatus 
+              status={{ 
+                isConnected, 
+                error: connectionError 
+              }} 
+            />
+          </div>
+        </div>
+      </main>
 
       <style jsx>{`
-        .admin-dashboard {
+        .activity-layout {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .app-header {
+          background-color: #1a73e8;
+          color: white;
+          padding: 1rem 0;
+        }
+        
+        .container {
           max-width: 1200px;
           margin: 0 auto;
+          padding: 0 1rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .logo {
+          font-size: 1.2rem;
+          font-weight: 500;
+          color: white;
+          text-decoration: none;
+        }
+        
+        
+        .app-content {
+          flex: 1;
+          background-color: #f8f9fa;
+          color: #202124;
+          padding: 2rem 0;
+        }
+        
+        .content-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 2rem;
+        }
+        
+        .admin-dashboard {
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          padding: 2rem;
         }
 
         .dashboard-header {
@@ -117,14 +176,15 @@ export default function AdminDashboardPage() {
           align-items: center;
           margin-bottom: 2rem;
         }
-
+        
         .dashboard-header h1 {
           margin: 0;
           font-size: 2rem;
+          color: #202124;
         }
 
         .create-button {
-          background-color: #4285f4;
+          background-color: #1a73e8;
           color: white;
           border: none;
           border-radius: 4px;
@@ -135,7 +195,7 @@ export default function AdminDashboardPage() {
         }
 
         .create-button:hover {
-          background-color: #3367d6;
+          background-color: #1765cc;
         }
 
         .filter-controls {

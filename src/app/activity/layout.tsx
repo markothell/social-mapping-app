@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import GlobalNavigation from '@/components/GlobalNavigation';
+import { activityService } from '@/core/services/activityService';
 
 export default function ActivityLayout({
   children,
@@ -12,14 +13,22 @@ export default function ActivityLayout({
 }) {
   const [userName, setUserName] = useState('Guest');
   const [sessionId, setSessionId] = useState<string | undefined>();
+  const [activityTitle, setActivityTitle] = useState<string>('activity');
   const pathname = usePathname();
 
-  // Extract sessionId from pathname
+  // Extract sessionId from pathname and load activity data
   useEffect(() => {
     const pathSegments = pathname.split('/');
     const activityIndex = pathSegments.indexOf('activity');
     if (activityIndex !== -1 && pathSegments[activityIndex + 1]) {
-      setSessionId(pathSegments[activityIndex + 1]);
+      const extractedSessionId = pathSegments[activityIndex + 1];
+      setSessionId(extractedSessionId);
+      
+      // Load activity to get title
+      const activity = activityService.getById(extractedSessionId);
+      if (activity && activity.settings.entryView?.title) {
+        setActivityTitle(activity.settings.entryView.title);
+      }
     }
   }, [pathname]);
 
@@ -70,8 +79,8 @@ export default function ActivityLayout({
       
       <main className="app-content">
         <div className="content-wrapper">
-          {/* Only show navigation if not on mapping page - mapping page will handle its own navigation */}
-          {!pathname.includes('/mapping') && <GlobalNavigation sessionId={sessionId} />}
+          {/* Only show navigation if not on mapping or tags page - these pages handle their own navigation */}
+          {!pathname.includes('/mapping') && !pathname.includes('/tags') && !pathname.includes('/mapping-results') && <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} />}
           {children}
         </div>
       </main>

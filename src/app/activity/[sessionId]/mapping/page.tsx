@@ -229,13 +229,18 @@ export default function MappingPage({
     xAxisLabel: 'Knowledge',
     xAxisLeftLabel: "Don't Know",
     xAxisRightLabel: 'Know',
+    xAxisMinLabel: "Don't Know",
+    xAxisMaxLabel: 'Know',
     yAxisLabel: 'Preference',
     yAxisTopLabel: 'Like',
     yAxisBottomLabel: "Don't Like",
+    yAxisMinLabel: "Don't Like",
+    yAxisMaxLabel: 'Like',
     gridSize: 4,
     enableAnnotations: true,
     maxAnnotationLength: 280,
-    instruction: 'Position each tag on the grid according to your perspective. You can add comments to explain your choices.'
+    instruction: 'Position each tag on the grid according to your perspective. You can add comments to explain your choices.',
+    contextInstructions: 'Why did you position this here?'
   };
   
   const completionPercentage = approvedTags.length > 0 
@@ -244,10 +249,14 @@ export default function MappingPage({
 
   return (
     <div className="mapping-page">
-      <GlobalNavigation sessionId={sessionId} onNavigate={navigateWithUnsavedCheck} />
+      <GlobalNavigation 
+        sessionId={sessionId} 
+        activityTitle={activity.settings.entryView?.title || 'activity'}
+        onNavigate={navigateWithUnsavedCheck} 
+      />
       <div className="mapping-container">
         <div className="mapping-header">
-          <h1 className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</h1>
+          <h1 className="core-question">{activity.settings.mapping?.coreQuestion || 'Position each tag on the grid'}</h1>
           <p className="stage-subtitle">Social Mapping</p>
           
           <div className="mapping-instructions">
@@ -347,7 +356,7 @@ export default function MappingPage({
           text-align: center;
         }
         
-        .activity-title {
+        .core-question {
           margin-top: 0;
           margin-bottom: 0.5rem;
           font-size: 2.2rem;

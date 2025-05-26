@@ -5,14 +5,19 @@ import { getTagColor } from '@/utils/mappingDataUtils';
 
 interface MappingSettings {
   xAxisLabel: string;
-  xAxisLeftLabel: string;
-  xAxisRightLabel: string;
+  xAxisLeftLabel?: string;
+  xAxisRightLabel?: string;
+  xAxisMinLabel?: string;
+  xAxisMaxLabel?: string;
   yAxisLabel: string;
-  yAxisTopLabel: string;
-  yAxisBottomLabel: string;
+  yAxisTopLabel?: string;
+  yAxisBottomLabel?: string;
+  yAxisMinLabel?: string;
+  yAxisMaxLabel?: string;
   gridSize: number;
   enableAnnotations: boolean;
   maxAnnotationLength: number;
+  contextInstructions?: string;
 }
 
 interface Tag {
@@ -124,12 +129,12 @@ export default function MappingGrid({
   return (
     <>
       <div className="mapping-grid-container">
-        {/* Top "Like" label */}
-        <div className="direction-label top">{settings.yAxisTopLabel}</div>
+        {/* Top label */}
+        <div className="direction-label top">{settings.yAxisMaxLabel || settings.yAxisTopLabel}</div>
         
         <div className="grid-row">
-          {/* Left "Don't Know" label */}
-          <div className="direction-label left">{settings.xAxisLeftLabel}</div>
+          {/* Left label */}
+          <div className="direction-label left">{settings.xAxisMinLabel || settings.xAxisLeftLabel}</div>
           
           {/* Main grid */}
           <div 
@@ -196,20 +201,20 @@ export default function MappingGrid({
             )}
           </div>
           
-          {/* Right "Know" label */}
-          <div className="direction-label right">{settings.xAxisRightLabel}</div>
+          {/* Right label */}
+          <div className="direction-label right">{settings.xAxisMaxLabel || settings.xAxisRightLabel}</div>
         </div>
         
-        {/* Bottom "Don't Like" label */}
-        <div className="direction-label bottom">{settings.yAxisBottomLabel}</div>
+        {/* Bottom label */}
+        <div className="direction-label bottom">{settings.yAxisMinLabel || settings.yAxisBottomLabel}</div>
       </div>
       
       {/* Annotation Modal */}
       {showAnnotationModal && selectedTag && (
         <div className="annotation-modal-overlay">
           <div className="annotation-modal">
-            <h3>Add a Comment (Optional)</h3>
-            <p>Why did you position "{selectedTag.text}" here?</p>
+            <h3>Add Context</h3>
+            <p>{settings.contextInstructions || `Why did you position "${selectedTag.text}" here?`}</p>
             
             <textarea
               value={annotation}

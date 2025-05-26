@@ -115,10 +115,13 @@ export default function MappingResultsPage({
 
   return (
     <div className="mapping-results-page">
-      <GlobalNavigation sessionId={sessionId} />
+      <GlobalNavigation 
+        sessionId={sessionId} 
+        activityTitle={activity.settings.entryView?.title || 'activity'}
+      />
       <div className="results-container">
         <div className="results-header">
-          <h1 className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</h1>
+          <h1 className="core-question">Results</h1>
           <p className="stage-subtitle">Mapping Results</p>
           
           <div className="completion-status">
@@ -239,7 +242,7 @@ export default function MappingResultsPage({
           text-align: center;
         }
         
-        .activity-title {
+        .core-question {
           margin-top: 0;
           margin-bottom: 0.5rem;
           font-size: 2.2rem;

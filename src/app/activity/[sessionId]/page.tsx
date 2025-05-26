@@ -167,7 +167,7 @@ export default function ActivityPage({
     <div className="activity-page">
       <div className="activity-container">
         <div className="activity-header">
-          <h1>{activity.settings.entryView?.title || 'Collaborative Activity'}</h1>
+          <h1>Welcome</h1>
           <p className="activity-description">
             {activity.settings.entryView?.description || 'Join this collaborative activity to contribute.'}
           </p>

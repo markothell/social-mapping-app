@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback } f
 import { io, Socket } from 'socket.io-client';
 import { syncService } from './syncService';
 import { hybridActivityService } from './hybridActivityService';
+import { activityService } from './activityService';
 
 // Context for accessing WebSocket throughout the app
 const WebSocketContext = createContext<{
@@ -412,8 +413,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       
       socketInstance.on('activity_deleted', async (data) => {
         try {
-          // Delete from local storage
-          await hybridActivityService.delete(data.activityId);
+          // Only delete from local storage (don't call hybridActivityService.delete to avoid loop)
+          activityService.delete(data.activityId);
           
           // Trigger UI update
           window.dispatchEvent(new CustomEvent('activity_deleted', { 

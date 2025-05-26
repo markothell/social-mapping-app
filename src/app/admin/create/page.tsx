@@ -3,23 +3,31 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { activityService } from '@/core/services/activityService';
 
 export default function CreateActivityPage() {
   const router = useRouter();
   const [activityType, setActivityType] = useState('mapping');
   const [title, setTitle] = useState('');
+  const [hostName, setHostName] = useState('');
   const [description, setDescription] = useState('Join this collaborative activity to contribute.');
   
   // Instruction text customization
+  const [tagCoreQuestion, setTagCoreQuestion] = useState('');
   const [tagCreationInstruction, setTagCreationInstruction] = useState('Add tags for the activity');
+  const [mappingCoreQuestion, setMappingCoreQuestion] = useState('');
   const [mappingInstruction, setMappingInstruction] = useState('Position each tag on the grid according to your perspective. You can add comments to explain your choices.');
+  const [contextInstructions, setContextInstructions] = useState('Why did you position this here?');
   
   // Axis labels customization
-  const [xAxisLeftLabel, setXAxisLeftLabel] = useState("Don't Know");
-  const [xAxisRightLabel, setXAxisRightLabel] = useState("Know");
-  const [yAxisTopLabel, setYAxisTopLabel] = useState("Like");
-  const [yAxisBottomLabel, setYAxisBottomLabel] = useState("Don't Like");
+  const [xAxisMinLabel, setXAxisMinLabel] = useState("Don't Know");
+  const [xAxisMaxLabel, setXAxisMaxLabel] = useState("Know");
+  const [yAxisMinLabel, setYAxisMinLabel] = useState("Don't Like");
+  const [yAxisMaxLabel, setYAxisMaxLabel] = useState("Like");
+  
+  // Results settings
+  const [requireReciprocalSharing, setRequireReciprocalSharing] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,24 +39,31 @@ export default function CreateActivityPage() {
     const activitySettings = {
       entryView: { 
         title,
+        hostName,
         description 
       },
       tagCreation: {
+        coreQuestion: tagCoreQuestion,
         instruction: tagCreationInstruction,
         enableVoting: true,
         voteThreshold: 1
       },
       mapping: {
+        coreQuestion: mappingCoreQuestion,
         xAxisLabel: 'Knowledge',
-        xAxisLeftLabel,
-        xAxisRightLabel,
+        xAxisMinLabel,
+        xAxisMaxLabel,
         yAxisLabel: 'Preference',
-        yAxisTopLabel,
-        yAxisBottomLabel,
+        yAxisMinLabel,
+        yAxisMaxLabel,
         gridSize: 4,
         enableAnnotations: true,
         maxAnnotationLength: 280,
-        instruction: mappingInstruction
+        instruction: mappingInstruction,
+        contextInstructions
+      },
+      results: {
+        requireReciprocalSharing
       }
     };
     
@@ -59,10 +74,20 @@ export default function CreateActivityPage() {
   };
   
   return (
-    <div className="create-activity">
-      <h1>Create New Activity</h1>
+    <div className="activity-layout">
+      <header className="app-header">
+        <div className="container">
+          <Link href="/" className="logo">
+            Social Insight Tools
+          </Link>
+          <h1>Create New Activity</h1>
+        </div>
+      </header>
       
-      <form onSubmit={handleSubmit}>
+      <main className="app-content">
+        <div className="content-wrapper">
+          <div className="create-activity">
+            <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="title">Activity Title</label>
           <input
@@ -72,6 +97,17 @@ export default function CreateActivityPage() {
             onChange={(e) => setTitle(e.target.value)}
             required
             placeholder="Enter a title for your activity"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="hostName">Host Name</label>
+          <input
+            type="text"
+            id="hostName"
+            value={hostName}
+            onChange={(e) => setHostName(e.target.value)}
+            placeholder="Enter the host's name"
           />
         </div>
 
@@ -103,6 +139,16 @@ export default function CreateActivityPage() {
             <div className="form-section">
               <h2>Tag Creation Settings</h2>
               <div className="form-group">
+                <label htmlFor="tagCoreQuestion">Core Question</label>
+                <input
+                  type="text"
+                  id="tagCoreQuestion"
+                  value={tagCoreQuestion}
+                  onChange={(e) => setTagCoreQuestion(e.target.value)}
+                  placeholder="What is the core question for tag creation?"
+                />
+              </div>
+              <div className="form-group">
                 <label htmlFor="tagCreationInstruction">Tag Creation Instructions</label>
                 <textarea
                   id="tagCreationInstruction"
@@ -117,6 +163,16 @@ export default function CreateActivityPage() {
             <div className="form-section">
               <h2>Mapping Settings</h2>
               <div className="form-group">
+                <label htmlFor="mappingCoreQuestion">Core Question</label>
+                <input
+                  type="text"
+                  id="mappingCoreQuestion"
+                  value={mappingCoreQuestion}
+                  onChange={(e) => setMappingCoreQuestion(e.target.value)}
+                  placeholder="What is the core question for mapping?"
+                />
+              </div>
+              <div className="form-group">
                 <label htmlFor="mappingInstruction">Mapping Instructions</label>
                 <textarea
                   id="mappingInstruction"
@@ -127,79 +183,170 @@ export default function CreateActivityPage() {
                 />
               </div>
               
+              <div className="form-group">
+                <label htmlFor="contextInstructions">Context Instructions</label>
+                <input
+                  type="text"
+                  id="contextInstructions"
+                  value={contextInstructions}
+                  onChange={(e) => setContextInstructions(e.target.value)}
+                  placeholder="Subtext for the input popup (e.g. Why did you position this here?)"
+                />
+              </div>
+              
               <h3>Axis Labels</h3>
-              <div className="grid-labels">
-                <div className="form-group">
-                  <label htmlFor="yAxisTopLabel">Y-Axis Top Label</label>
+              <div className="axis-labels">
+                <div className="axis-visual">
+                  <div className="axis-display">
+                    <div className="y-axis">
+                      <div className="axis-endpoint y-max"></div>
+                      <div className="axis-line vertical"></div>
+                      <div className="axis-endpoint y-min"></div>
+                    </div>
+                    <div className="x-axis">
+                      <div className="axis-endpoint x-min"></div>
+                      <div className="axis-line horizontal"></div>
+                      <div className="axis-endpoint x-max"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="axis-inputs">
+                  <div className="form-group">
+                    <label htmlFor="xAxisMinLabel">X-Axis Min</label>
+                    <input
+                      type="text"
+                      id="xAxisMinLabel"
+                      value={xAxisMinLabel}
+                      onChange={(e) => setXAxisMinLabel(e.target.value)}
+                      placeholder="Min value (e.g. Don't Know)"
+                      className="x-min-input"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="xAxisMaxLabel">X-Axis Max</label>
+                    <input
+                      type="text"
+                      id="xAxisMaxLabel"
+                      value={xAxisMaxLabel}
+                      onChange={(e) => setXAxisMaxLabel(e.target.value)}
+                      placeholder="Max value (e.g. Know)"
+                      className="x-max-input"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="yAxisMinLabel">Y-Axis Min</label>
+                    <input
+                      type="text"
+                      id="yAxisMinLabel"
+                      value={yAxisMinLabel}
+                      onChange={(e) => setYAxisMinLabel(e.target.value)}
+                      placeholder="Min value (e.g. Don't Like)"
+                      className="y-min-input"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="yAxisMaxLabel">Y-Axis Max</label>
+                    <input
+                      type="text"
+                      id="yAxisMaxLabel"
+                      value={yAxisMaxLabel}
+                      onChange={(e) => setYAxisMaxLabel(e.target.value)}
+                      placeholder="Max value (e.g. Like)"
+                      className="y-max-input"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="form-section">
+              <h2>Results Settings</h2>
+              <div className="form-group checkbox-group">
+                <label htmlFor="requireReciprocalSharing" className="checkbox-label">
                   <input
-                    type="text"
-                    id="yAxisTopLabel"
-                    value={yAxisTopLabel}
-                    onChange={(e) => setYAxisTopLabel(e.target.value)}
-                    placeholder="Top label (e.g. Like)"
+                    type="checkbox"
+                    id="requireReciprocalSharing"
+                    checked={requireReciprocalSharing}
+                    onChange={(e) => setRequireReciprocalSharing(e.target.checked)}
                   />
-                </div>
-                
-                <div className="grid-center">
-                  <div className="grid-placeholder"></div>
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="xAxisLeftLabel">X-Axis Left Label</label>
-                  <input
-                    type="text"
-                    id="xAxisLeftLabel"
-                    value={xAxisLeftLabel}
-                    onChange={(e) => setXAxisLeftLabel(e.target.value)}
-                    placeholder="Left label (e.g. Don't Know)"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="xAxisRightLabel">X-Axis Right Label</label>
-                  <input
-                    type="text"
-                    id="xAxisRightLabel"
-                    value={xAxisRightLabel}
-                    onChange={(e) => setXAxisRightLabel(e.target.value)}
-                    placeholder="Right label (e.g. Know)"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="yAxisBottomLabel">Y-Axis Bottom Label</label>
-                  <input
-                    type="text"
-                    id="yAxisBottomLabel"
-                    value={yAxisBottomLabel}
-                    onChange={(e) => setYAxisBottomLabel(e.target.value)}
-                    placeholder="Bottom label (e.g. Don't Like)"
-                  />
-                </div>
+                  Require Reciprocal Sharing
+                </label>
               </div>
             </div>
           </>
         )}
         
-        <div className="form-actions">
-          <button type="button" onClick={() => router.push('/admin')}>
-            Cancel
-          </button>
-          <button type="submit" className="primary">
-            Create Activity
-          </button>
+              <div className="form-actions">
+                <button type="button" onClick={() => router.push('/admin')}>
+                  Cancel
+                </button>
+                <button type="submit" className="primary">
+                  Create Activity
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </form>
+      </main>
 
       <style jsx>{`
-        .create-activity {
-          max-width: 800px;
-          margin: 0 auto;
-          padding-bottom: 2rem;
+        .activity-layout {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
         }
         
-        h1 {
-          margin-bottom: 2rem;
+        .app-header {
+          background-color: #1a73e8;
+          color: white;
+          padding: 1rem 0;
+        }
+        
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 1rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .logo {
+          font-size: 1.2rem;
+          font-weight: 500;
+          color: white;
+          text-decoration: none;
+        }
+        
+        .app-content {
+          flex: 1;
+          background-color: #f8f9fa;
+          color: #202124;
+          padding: 2rem 0;
+        }
+        
+        .content-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 2rem;
+        }
+        
+        .create-activity {
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          padding: 2rem;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+        
+        .app-header h1 {
+          margin: 0;
+          font-size: 1.5rem;
+          color: white;
         }
         
         h2 {
@@ -245,35 +392,121 @@ export default function CreateActivityPage() {
           font-size: 1rem;
         }
         
-        .grid-labels {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: auto auto auto;
+        .axis-labels {
+          display: flex;
+          gap: 2rem;
+          align-items: flex-start;
+        }
+        
+        .axis-visual {
+          flex-shrink: 0;
+        }
+        
+        .axis-display {
+          position: relative;
+          width: 240px;
+          height: 240px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        
+        .y-axis {
+          position: absolute;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          height: 100px;
+        }
+        
+        .x-axis {
+          position: absolute;
+          display: flex;
+          align-items: center;
+          width: 100px;
+        }
+        
+        .axis-line {
+          background-color: #5f6368;
+        }
+        
+        .axis-line.vertical {
+          width: 2px;
+          height: 120px;
+        }
+        
+        .axis-line.horizontal {
+          width: 120px;
+          height: 2px;
+        }
+        
+        .axis-endpoint {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          margin: 2px;
+        }
+        
+        .axis-endpoint.x-min {
+          background-color: #ea4335;
+        }
+        
+        .axis-endpoint.x-max {
+          background-color: #34a853;
+        }
+        
+        .axis-endpoint.y-min {
+          background-color: #fbbc04;
+        }
+        
+        .axis-endpoint.y-max {
+          background-color: #4285f4;
+        }
+        
+        .axis-inputs {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
           gap: 1rem;
-          align-items: start;
+          max-width: 200px;
         }
         
-        .grid-center {
-          grid-column: 1 / span 2;
+        .axis-inputs input {
+          max-width: 150px;
+        }
+        
+        .x-min-input {
+          border-bottom: 3px solid #ea4335 !important;
+        }
+        
+        .x-max-input {
+          border-bottom: 3px solid #34a853 !important;
+        }
+        
+        .y-min-input {
+          border-bottom: 3px solid #fbbc04 !important;
+        }
+        
+        .y-max-input {
+          border-bottom: 3px solid #4285f4 !important;
+        }
+        
+        .checkbox-group {
           display: flex;
-          justify-content: center;
           align-items: center;
-          height: 80px;
         }
         
-        .grid-placeholder {
-          width: 60px;
-          height: 60px;
-          background-color: #e8eaed;
-          border-radius: 4px;
+        .checkbox-label {
           display: flex;
-          justify-content: center;
           align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          font-weight: 500;
         }
         
-        .grid-placeholder::after {
-          content: 'Grid';
-          color: #5f6368;
+        .checkbox-label input[type="checkbox"] {
+          width: auto;
+          margin: 0;
         }
         
         .form-actions {
