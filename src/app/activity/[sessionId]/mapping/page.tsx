@@ -1,13 +1,15 @@
 // src/app/activity/[sessionId]/mapping/page.tsx
 "use client";
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import MappingGrid from '@/components/MappingGrid';
 import TagSelectionPanel from '@/components/TagSelectionPanel';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
+import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
+import GlobalNavigation from '@/components/GlobalNavigation';
 
 function useParams<T>(params: T | Promise<T>): T {
   return params instanceof Promise ? use(params) : params;
@@ -27,6 +29,10 @@ export default function MappingPage({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [mappedTags, setMappedTags] = useState<string[]>([]);
   const [userMappings, setUserMappings] = useState<any>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const lastSavedMappings = useRef<any>({});
   
   // Use the real-time activity hook
   const {
@@ -87,9 +93,24 @@ export default function MappingPage({
         
         setUserMappings(mappings);
         setMappedTags(mappedTagIds);
+        lastSavedMappings.current = mappings;
+        setHasUnsavedChanges(false);
       }
     }
   }, [activity, user]);
+
+  // Check for unsaved changes
+  useEffect(() => {
+    const mappingsChanged = JSON.stringify(userMappings) !== JSON.stringify(lastSavedMappings.current);
+    const hasChanges = mappingsChanged && Object.keys(userMappings).length > 0;
+    console.log('Unsaved changes check:', { 
+      mappingsChanged, 
+      userMappingsCount: Object.keys(userMappings).length,
+      lastSavedCount: Object.keys(lastSavedMappings.current).length,
+      hasChanges 
+    });
+    setHasUnsavedChanges(hasChanges);
+  }, [userMappings]);
   
   const handleTagSelect = (tagId: string) => {
     setSelectedTag(tagId);
@@ -117,11 +138,55 @@ export default function MappingPage({
     // Clear selected tag
     setSelectedTag(null);
     
-    // Update the activity with new position using real-time updates
-    const positions = Object.values(newUserMappings);
-    updateMapping(positions);
+    // DON'T auto-update - just store locally
+    // This creates "unsaved changes" that need to be submitted
+    console.log('Tag positioned locally, not auto-submitting');
   };
   
+  // Navigation functions that check for unsaved changes
+  const navigateWithUnsavedCheck = useCallback((path: string) => {
+    console.log('Navigate check:', { hasUnsavedChanges, path });
+    if (hasUnsavedChanges) {
+      console.log('Showing unsaved dialog');
+      setPendingNavigation(path);
+      setShowUnsavedDialog(true);
+    } else {
+      console.log('No unsaved changes, navigating directly');
+      router.push(path);
+    }
+  }, [hasUnsavedChanges, router]);
+
+  const handleSubmitChanges = () => {
+    if (!activity || !user) return;
+    
+    const positions = Object.values(userMappings);
+    updateMapping(positions, true); // Mark as complete like the main submit button
+    lastSavedMappings.current = { ...userMappings };
+    setHasUnsavedChanges(false);
+    setShowUnsavedDialog(false);
+    
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setUserMappings(lastSavedMappings.current);
+    setHasUnsavedChanges(false);
+    setShowUnsavedDialog(false);
+    
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
+  const handleCancelNavigation = () => {
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+  };
+
   const handleCompleteMappings = () => {
     if (!activity || !user) return;
     
@@ -138,6 +203,8 @@ export default function MappingPage({
     // Important: Create a properly structured mapping update
     // with the isComplete flag set at the mapping level, not just on positions
     updateMapping(positions, true); // Pass true to mark the entire mapping as complete
+    lastSavedMappings.current = { ...userMappings };
+    setHasUnsavedChanges(false);
     
     // If admin, redirect to results and change phase
     if (isAdmin) {
@@ -177,6 +244,7 @@ export default function MappingPage({
 
   return (
     <div className="mapping-page">
+      <GlobalNavigation sessionId={sessionId} onNavigate={navigateWithUnsavedCheck} />
       <div className="mapping-container">
         <div className="mapping-header">
           <h1 className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</h1>
@@ -199,7 +267,10 @@ export default function MappingPage({
                 style={{ width: `${completionPercentage}%` }}
               ></div>
             </div>
-            <p>{mappedTags.length} of {approvedTags.length} tags mapped ({completionPercentage}%)</p>
+            <p>
+              {mappedTags.length} of {approvedTags.length} tags mapped ({completionPercentage}%)
+              {hasUnsavedChanges && <span className="unsaved-indicator"> • Unsaved changes</span>}
+            </p>
           </div>
         </div>
         
@@ -228,14 +299,14 @@ export default function MappingPage({
 
         <div className="navigation-controls">
           <button
-            onClick={() => router.push(`/activity/${activity.id}/tags`)}
+            onClick={() => navigateWithUnsavedCheck(`/activity/${activity.id}/tags`)}
             className="secondary-button"
           >
             Back to Tags
           </button>
           
           <button
-            onClick={() => router.push(`/activity/${activity.id}/mapping-results`)}
+            onClick={() => navigateWithUnsavedCheck(`/activity/${activity.id}/mapping-results`)}
             className="secondary-button"
           >
             View Results
@@ -251,18 +322,24 @@ export default function MappingPage({
         </div>
       </div>
 
+      <UnsavedChangesDialog
+        isOpen={showUnsavedDialog}
+        onSubmit={handleSubmitChanges}
+        onDiscard={handleDiscardChanges}
+        onCancel={handleCancelNavigation}
+      />
+
       <style jsx>{`
         .mapping-page {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 2rem;
+          color: #202124;
         }
         
         .mapping-container {
           background-color: white;
-          border-radius: 8px;
+          border-radius: 0 0 8px 8px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
           padding: 2rem;
+          margin-top: -1px;
         }
         
         .mapping-header {
@@ -312,6 +389,11 @@ export default function MappingPage({
           background-color: #34a853;
           border-radius: 4px;
           transition: width 0.3s ease;
+        }
+
+        .unsaved-indicator {
+          color: #ea4335;
+          font-weight: 500;
         }
         
         .completion-badge {

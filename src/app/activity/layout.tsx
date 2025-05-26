@@ -2,6 +2,8 @@
 "use client";
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import GlobalNavigation from '@/components/GlobalNavigation';
 
 export default function ActivityLayout({
   children,
@@ -9,6 +11,17 @@ export default function ActivityLayout({
   children: React.ReactNode;
 }) {
   const [userName, setUserName] = useState('Guest');
+  const [sessionId, setSessionId] = useState<string | undefined>();
+  const pathname = usePathname();
+
+  // Extract sessionId from pathname
+  useEffect(() => {
+    const pathSegments = pathname.split('/');
+    const activityIndex = pathSegments.indexOf('activity');
+    if (activityIndex !== -1 && pathSegments[activityIndex + 1]) {
+      setSessionId(pathSegments[activityIndex + 1]);
+    }
+  }, [pathname]);
 
   // Only access localStorage after the component has mounted (client-side)
   useEffect(() => {
@@ -37,7 +50,11 @@ export default function ActivityLayout({
       </header>
       
       <main className="app-content">
-        {children}
+        <div className="content-wrapper">
+          {/* Only show navigation if not on mapping page - mapping page will handle its own navigation */}
+          {!pathname.includes('/mapping') && <GlobalNavigation sessionId={sessionId} />}
+          {children}
+        </div>
       </main>
       
       <footer className="app-footer">
@@ -83,7 +100,15 @@ export default function ActivityLayout({
         
         .app-content {
           flex: 1;
+          background-color: #f8f9fa;
+          color: #202124;
           padding: 2rem 0;
+        }
+
+        .content-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 2rem;
         }
         
         .app-footer {

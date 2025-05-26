@@ -7,6 +7,7 @@ import { activityService } from '@/core/services/activityService';
 import MappingResultsVisualization from '@/components/MappingResultsVisualization';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
+import GlobalNavigation from '@/components/GlobalNavigation';
 import { formatMappingsAsCSV, formatMappingsAsJSON } from '@/utils/mappingDataUtils';
 
 // Helper function for consistent params handling across the app
@@ -114,6 +115,7 @@ export default function MappingResultsPage({
 
   return (
     <div className="mapping-results-page">
+      <GlobalNavigation sessionId={sessionId} />
       <div className="results-container">
         <div className="results-header">
           <h1 className="activity-title">{activity.settings.entryView?.title || 'Collaborative Activity'}</h1>
@@ -221,16 +223,15 @@ export default function MappingResultsPage({
 
       <style jsx>{`
         .mapping-results-page {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 2rem;
+          color: #202124;
         }
         
         .results-container {
           background-color: white;
-          border-radius: 8px;
+          border-radius: 0 0 8px 8px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
           padding: 2rem;
+          margin-top: -1px;
         }
         
         .results-header {

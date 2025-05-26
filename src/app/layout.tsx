@@ -3,6 +3,7 @@ import { WebSocketProvider } from '@/core/services/websocketService';
 import { SyncInitializer } from '@/components/SyncInitializer';
 import OfflineIndicator from '@/components/OfflineIndicator';
 import { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Collaborative Activity App',

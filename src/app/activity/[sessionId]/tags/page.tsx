@@ -198,16 +198,15 @@ export default function TagsPage({
       
       <style jsx>{`
         .tags-page {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 2rem;
+          color: #202124;
         }
         
         .tags-container {
           background-color: white;
-          border-radius: 8px;
+          border-radius: 0 0 8px 8px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
           padding: 2rem;
+          margin-top: -1px;
         }
         
         .tags-header {
