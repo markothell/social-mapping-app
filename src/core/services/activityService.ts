@@ -52,6 +52,11 @@ export const activityService = {
   create(type: 'mapping' | 'ranking', settings: any): Activity {
     const newActivity = createDefaultActivity(type, settings.entryView?.title || '');
     
+    // Extract hostName from settings and set it as a top-level property
+    if (settings.entryView?.hostName) {
+      newActivity.hostName = settings.entryView.hostName;
+    }
+    
     // Completely replace mapping settings if provided
     if (type === 'mapping' && settings.mapping) {
       // Use a complete replacement approach instead of merging

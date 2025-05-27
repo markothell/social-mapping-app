@@ -103,6 +103,7 @@ export interface Activity {
   tags: Tag[];
   mappings: Mapping[];
   rankings: Ranking[];
+  hostName?: string;
 }
 
 export function createDefaultActivity(type: 'mapping' | 'ranking', title: string): Activity {

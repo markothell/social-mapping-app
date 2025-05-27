@@ -14,12 +14,28 @@ interface GlobalNavigationProps {
   sessionId?: string;
   activityTitle?: string;
   onNavigate?: (path: string) => void;
+  hostName?: string;
+  activity?: any;
 }
 
-export default function GlobalNavigation({ sessionId, activityTitle, onNavigate }: GlobalNavigationProps) {
+export default function GlobalNavigation({ sessionId, activityTitle, onNavigate, hostName, activity }: GlobalNavigationProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [currentStep, setCurrentStep] = useState(0);
+
+  const getSubtitle = () => {
+    if (pathname.includes('/mapping-results')) {
+      return 'Results';
+    } else if (pathname.includes('/mapping')) {
+      return 'Map Concepts';
+    } else if (pathname.includes('/tags')) {
+      return 'Nominate topics';
+    } else {
+      // Check both hostName prop and activity.settings.entryView.hostName for backwards compatibility
+      const effectiveHostName = hostName || activity?.settings?.entryView?.hostName;
+      return effectiveHostName ? `Created by ${effectiveHostName}` : 'Social Activity';
+    }
+  };
 
   const steps: NavigationStep[] = [
     { id: 'home', label: 'Home', icon: '🏠', path: sessionId ? `/activity/${sessionId}` : '/' },
@@ -55,7 +71,7 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate 
       <div className="nav-container">
         <div className="nav-brand">
           <span className="brand-text">Social_Map.{activityTitle || 'activity'}</span>
-          <span className="brand-subtitle">prosperity</span>
+          <span className="brand-subtitle">{getSubtitle()}</span>
         </div>
         
         <div className="nav-steps">

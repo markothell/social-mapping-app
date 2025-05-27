@@ -252,7 +252,9 @@ export default function MappingPage({
       <GlobalNavigation 
         sessionId={sessionId} 
         activityTitle={activity.settings.entryView?.title || 'activity'}
-        onNavigate={navigateWithUnsavedCheck} 
+        onNavigate={navigateWithUnsavedCheck}
+        hostName={activity.hostName}
+        activity={activity}
       />
       <div className="mapping-container">
         <div className="mapping-header">

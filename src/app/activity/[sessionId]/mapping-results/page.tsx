@@ -118,6 +118,8 @@ export default function MappingResultsPage({
       <GlobalNavigation 
         sessionId={sessionId} 
         activityTitle={activity.settings.entryView?.title || 'activity'}
+        hostName={activity.hostName}
+        activity={activity}
       />
       <div className="results-container">
         <div className="results-header">

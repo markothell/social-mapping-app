@@ -144,6 +144,8 @@ export default function TagsPage({
       <GlobalNavigation 
         sessionId={sessionId} 
         activityTitle={activity.settings.entryView?.title || 'activity'}
+        hostName={activity.hostName}
+        activity={activity}
       />
       <div className="tags-container">
         <div className="tags-header">

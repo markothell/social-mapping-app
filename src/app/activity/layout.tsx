@@ -14,6 +14,8 @@ export default function ActivityLayout({
   const [userName, setUserName] = useState('Guest');
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [activityTitle, setActivityTitle] = useState<string>('activity');
+  const [hostName, setHostName] = useState<string | undefined>();
+  const [activity, setActivity] = useState<any>(null);
   const pathname = usePathname();
 
   // Extract sessionId from pathname and load activity data
@@ -24,10 +26,16 @@ export default function ActivityLayout({
       const extractedSessionId = pathSegments[activityIndex + 1];
       setSessionId(extractedSessionId);
       
-      // Load activity to get title
-      const activity = activityService.getById(extractedSessionId);
-      if (activity && activity.settings.entryView?.title) {
-        setActivityTitle(activity.settings.entryView.title);
+      // Load activity to get title and host
+      const loadedActivity = activityService.getById(extractedSessionId);
+      if (loadedActivity) {
+        setActivity(loadedActivity);
+        if (loadedActivity.settings.entryView?.title) {
+          setActivityTitle(loadedActivity.settings.entryView.title);
+        }
+        if (loadedActivity.hostName) {
+          setHostName(loadedActivity.hostName);
+        }
       }
     }
   }, [pathname]);
@@ -80,7 +88,7 @@ export default function ActivityLayout({
       <main className="app-content">
         <div className="content-wrapper">
           {/* Only show navigation if not on mapping or tags page - these pages handle their own navigation */}
-          {!pathname.includes('/mapping') && !pathname.includes('/tags') && !pathname.includes('/mapping-results') && <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} />}
+          {!pathname.includes('/mapping') && !pathname.includes('/tags') && !pathname.includes('/mapping-results') && <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} hostName={hostName} activity={activity} />}
           {children}
         </div>
       </main>
