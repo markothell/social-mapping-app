@@ -538,10 +538,10 @@ export const hybridActivityService = {
           userName: vote.userName,
           timestamp: new Date()
         });
-        
-        // Update tag status based on new threshold logic
-        this.updateTagApprovalStatus(activity);
       }
+      
+      // Update tag status based on new threshold logic
+      this.updateTagApprovalStatus(activity);
       
       activity.updatedAt = new Date();
       return activity;
@@ -600,6 +600,8 @@ export const hybridActivityService = {
       activity.tags.forEach(tag => {
         if (tag.status === 'pending' && tag.votes.length >= minimumVotes) {
           tag.status = 'approved';
+        } else if (tag.status === 'approved' && tag.votes.length < minimumVotes) {
+          tag.status = 'pending';
         }
       });
     } else if (thresholdType === 'topN') {
