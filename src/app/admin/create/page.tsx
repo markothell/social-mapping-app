@@ -27,6 +27,7 @@ export default function CreateActivityPage() {
   const [yAxisMaxLabel, setYAxisMaxLabel] = useState("Like");
   
   // Results settings
+  const [resultsInstruction, setResultsInstruction] = useState('Review the collective mapping to understand different perspectives and insights.');
   const [requireReciprocalSharing, setRequireReciprocalSharing] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -63,6 +64,7 @@ export default function CreateActivityPage() {
         contextInstructions
       },
       results: {
+        instruction: resultsInstruction,
         requireReciprocalSharing
       }
     };
@@ -264,6 +266,16 @@ export default function CreateActivityPage() {
             
             <div className="form-section">
               <h2>Results Settings</h2>
+              <div className="form-group">
+                <label htmlFor="resultsInstruction">Results Instructions</label>
+                <textarea
+                  id="resultsInstruction"
+                  value={resultsInstruction}
+                  onChange={(e) => setResultsInstruction(e.target.value)}
+                  placeholder="Instructions for the results page"
+                  rows={3}
+                />
+              </div>
               <div className="form-group checkbox-group">
                 <label htmlFor="requireReciprocalSharing" className="checkbox-label">
                   <input

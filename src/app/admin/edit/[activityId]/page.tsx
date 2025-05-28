@@ -31,6 +31,7 @@ export default function EditActivityPage() {
   const [yAxisMaxLabel, setYAxisMaxLabel] = useState("Like");
   
   // Results settings
+  const [resultsInstruction, setResultsInstruction] = useState('Review the collective mapping to understand different perspectives and insights.');
   const [requireReciprocalSharing, setRequireReciprocalSharing] = useState(false);
   
   // Loading state
@@ -71,6 +72,7 @@ export default function EditActivityPage() {
           setYAxisMaxLabel((activity.settings?.mapping as any)?.yAxisMaxLabel || "Like");
           
           // Results settings
+          setResultsInstruction((activity.settings as any)?.results?.instruction || 'Review the collective mapping to understand different perspectives and insights.');
           setRequireReciprocalSharing((activity.settings as any)?.results?.requireReciprocalSharing || false);
         } else {
           setError('Activity not found');
@@ -118,6 +120,7 @@ export default function EditActivityPage() {
           contextInstructions
         },
         results: {
+          instruction: resultsInstruction,
           requireReciprocalSharing
         }
       };
@@ -371,6 +374,16 @@ export default function EditActivityPage() {
             
             <div className="form-section">
               <h2>Results Settings</h2>
+              <div className="form-group">
+                <label htmlFor="resultsInstruction">Results Instructions</label>
+                <textarea
+                  id="resultsInstruction"
+                  value={resultsInstruction}
+                  onChange={(e) => setResultsInstruction(e.target.value)}
+                  placeholder="Instructions for the results page"
+                  rows={3}
+                />
+              </div>
               <div className="form-group checkbox-group">
                 <label htmlFor="requireReciprocalSharing" className="checkbox-label">
                   <input

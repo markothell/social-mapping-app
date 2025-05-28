@@ -150,7 +150,6 @@ export default function TagsPage({
       <div className="tags-container">
         <div className="tags-header">
           <h1 className="core-question">{activity.settings.tagCreation?.coreQuestion || 'What topics should we explore?'}</h1>
-          <p className="stage-subtitle">Tag Creation</p>
           <p className="instruction">
             {activity.settings.tagCreation?.instruction || 'Add tags for the activity'}
           </p>
@@ -229,13 +228,6 @@ export default function TagsPage({
           font-weight: 600;
         }
         
-        .stage-subtitle {
-          font-size: 1.3rem;
-          color: #1a73e8;
-          margin-top: 0;
-          margin-bottom: 1rem;
-          font-weight: 500;
-        }
         
         .instruction {
           font-size: 1.1rem;

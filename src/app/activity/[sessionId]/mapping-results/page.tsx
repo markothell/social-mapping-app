@@ -124,7 +124,12 @@ export default function MappingResultsPage({
       <div className="results-container">
         <div className="results-header">
           <h1 className="core-question">Results</h1>
-          <p className="stage-subtitle">Mapping Results</p>
+          
+          <div className="results-instructions">
+            <p>
+              {activity.settings?.results?.instruction || 'Review the collective mapping to understand different perspectives and insights.'}
+            </p>
+          </div>
           
           <div className="completion-status">
             <div className="completion-bar">
@@ -252,13 +257,14 @@ export default function MappingResultsPage({
           font-weight: 600;
         }
         
-        .stage-subtitle {
-          font-size: 1.3rem;
-          color: #1a73e8;
-          margin-top: 0;
-          margin-bottom: 1rem;
-          font-weight: 500;
+        .results-instructions {
+          margin-bottom: 1.5rem;
+          color: #5f6368;
+          max-width: 700px;
+          margin-left: auto;
+          margin-right: auto;
         }
+        
         
         .completion-status {
           margin-bottom: 1.5rem;

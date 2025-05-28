@@ -89,6 +89,10 @@ export interface ActivitySettings {
     context: string;
     topRankMeaning: string;
   };
+  results?: {
+    instruction?: string;
+    requireReciprocalSharing?: boolean;
+  };
 }
 
 export interface Activity {

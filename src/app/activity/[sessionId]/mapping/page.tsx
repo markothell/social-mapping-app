@@ -259,11 +259,10 @@ export default function MappingPage({
       <div className="mapping-container">
         <div className="mapping-header">
           <h1 className="core-question">{activity.settings.mapping?.coreQuestion || 'Position each tag on the grid'}</h1>
-          <p className="stage-subtitle">Social Mapping</p>
           
           <div className="mapping-instructions">
             <p>
-              {localStorage.getItem('mapping_instruction') || 
+              {mappingSettings.instruction || 
                 `Position each tag on the grid according to your perspective.${
                   mappingSettings.enableAnnotations ? ' You can add comments to explain your choices.' : ''
                 }`
@@ -366,13 +365,6 @@ export default function MappingPage({
           font-weight: 600;
         }
         
-        .stage-subtitle {
-          font-size: 1.3rem;
-          color: #1a73e8;
-          margin-top: 0;
-          margin-bottom: 1rem;
-          font-weight: 500;
-        }
         
         .mapping-instructions {
           margin-bottom: 1.5rem;
