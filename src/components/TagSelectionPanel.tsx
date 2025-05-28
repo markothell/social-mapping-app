@@ -14,7 +14,7 @@ interface TagSelectionPanelProps {
   tags: Tag[];
   mappedTags: string[];
   selectedTag: string | null;
-  onSelectTag: (tagId: string) => void;
+  onSelectTag: (tagId: string | null) => void;
 }
 
 export default function TagSelectionPanel({
@@ -93,14 +93,16 @@ export default function TagSelectionPanel({
           </button>
           <button
             onClick={() => setFilter('unmapped')}
-            className={filter === 'unmapped' ? 'active' : ''}
+            className={`unmapped-filter ${filter === 'unmapped' ? 'active' : ''}`}
           >
+            <span className="unmapped-indicator-dot"></span>
             Unmapped ({unmappedCount})
           </button>
           <button
             onClick={() => setFilter('mapped')}
-            className={filter === 'mapped' ? 'active' : ''}
+            className={`mapped-filter ${filter === 'mapped' ? 'active' : ''}`}
           >
+            <span className="mapped-indicator-dot"></span>
             Mapped ({mappedCount})
           </button>
         </div>
@@ -122,18 +124,11 @@ export default function TagSelectionPanel({
               <div
                 key={tag.id}
                 className={`tag-item ${isMapped ? 'mapped' : ''} ${isSelected ? 'selected' : ''}`}
-                onClick={() => onSelectTag(tag.id)}
+                onClick={() => onSelectTag(isSelected ? null : tag.id)}
                 style={{ borderLeft: `4px solid ${tagColor}` }}
               >
                 <div className="color-indicator" style={{ backgroundColor: tagColor }}></div>
                 <div className="tag-text">{tag.text}</div>
-                <div className="tag-status">
-                  {isMapped ? (
-                    <span className="mapped-indicator">✓ Mapped</span>
-                  ) : (
-                    <span className="unmapped-indicator">Click to map</span>
-                  )}
-                </div>
               </div>
             );
           })}
@@ -142,7 +137,7 @@ export default function TagSelectionPanel({
 
       <div className="helper-text">
         {selectedTag ? (
-          <p>Click on the grid to position the selected tag</p>
+          <p>Click on the grid to position the selected tag, or click the tag again to deselect</p>
         ) : (
           <p>Select a tag to position it on the grid</p>
         )}
@@ -157,7 +152,7 @@ export default function TagSelectionPanel({
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           display: flex;
           flex-direction: column;
-          height: 600px;
+          height: calc(600px + 4rem);
         }
         
         .panel-header {
@@ -229,6 +224,38 @@ export default function TagSelectionPanel({
           font-weight: 500;
         }
         
+        .unmapped-filter.active {
+          background-color: white !important;
+          color: #202124 !important;
+          border-color: #dadce0 !important;
+        }
+        
+        .mapped-filter.active {
+          background-color: #f5f5f5 !important;
+          color: #202124 !important;
+          border-color: #dadce0 !important;
+        }
+        
+        .unmapped-indicator-dot {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          background-color: white;
+          border-radius: 50%;
+          margin-right: 0.5rem;
+          border: 1px solid #dadce0;
+        }
+        
+        .mapped-indicator-dot {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          background-color: #f5f5f5;
+          border-radius: 50%;
+          margin-right: 0.5rem;
+          border: 1px solid #dadce0;
+        }
+        
         .tag-list {
           flex-grow: 1;
           overflow-y: auto;
@@ -260,17 +287,23 @@ export default function TagSelectionPanel({
         .tag-item {
           background-color: white;
           border-radius: 6px;
-          padding: 0.75rem 1rem;
+          padding: 0.5rem 0.75rem;
           cursor: pointer;
           border: 1px solid #dadce0;
           transition: all 0.2s;
           position: relative;
           overflow: hidden;
+          min-height: 40px;
+          flex-shrink: 0;
+        }
+        
+        .tag-item.mapped {
+          background-color: #f5f5f5;
         }
         
         .tag-item:hover {
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-          transform: translateY(-1px);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+          border-color: #bbb;
         }
         
         .color-indicator {
@@ -278,7 +311,7 @@ export default function TagSelectionPanel({
           height: 12px;
           border-radius: 50%;
           position: absolute;
-          top: 0.75rem;
+          top: 0.5rem;
           right: 0.75rem;
         }
         
@@ -290,22 +323,12 @@ export default function TagSelectionPanel({
         
         .tag-text {
           font-size: 0.95rem;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0;
           color: #202124;
-          word-break: break-word;
-        }
-        
-        .tag-status {
-          font-size: 0.8rem;
-        }
-        
-        .mapped-indicator {
-          color: #34a853;
-          font-weight: 500;
-        }
-        
-        .unmapped-indicator {
-          color: #5f6368;
+          padding-right: 1.5rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
         .no-tags {

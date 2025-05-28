@@ -262,11 +262,12 @@ export default function MappingGrid({
           display: flex;
           align-items: center;
           width: 100%;
+          gap: 0.5rem;
         }
         
         .mapping-grid {
           position: relative;
-          width: 100%;
+          flex: 1;
           height: 600px;
           background-color: white;
           border: 1px solid #dadce0;
@@ -320,11 +321,24 @@ export default function MappingGrid({
         }
         
         .direction-label.left {
-          padding-right: 1rem;
+          writing-mode: vertical-lr;
+          text-orientation: mixed;
+          padding-right: 0.5rem;
+          width: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transform: rotate(180deg);
         }
         
         .direction-label.right {
-          padding-left: 1rem;
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          padding-left: 0.5rem;
+          width: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .positioned-tag {
@@ -348,7 +362,7 @@ export default function MappingGrid({
         /* Ensure the mapping grid has position relative for absolute positioning context */
         .mapping-grid {
           position: relative !important; /* Force position relative */
-          width: 100%;
+          flex: 1;
           height: 600px;
           background-color: white;
           border: 1px solid #dadce0;

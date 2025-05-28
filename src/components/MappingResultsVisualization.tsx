@@ -118,14 +118,17 @@ export default function MappingResultsVisualization({
         const avgPos = averagePositions[tagId];
         const stdDev = stdDeviations[tagId] || { consensus: 1 };
         
-        result[tagId] = {
-          tagId,
-          x: avgPos.x,
-          y: avgPos.y,
-          count: avgPos.count,
-          text: avgPos.text,
-          consensus: stdDev.consensus
-        };
+        // Only include tags that have been mapped by at least one participant
+        if (avgPos.count > 0) {
+          result[tagId] = {
+            tagId,
+            x: avgPos.x,
+            y: avgPos.y,
+            count: avgPos.count,
+            text: avgPos.text,
+            consensus: stdDev.consensus
+          };
+        }
       });
       
       return result;

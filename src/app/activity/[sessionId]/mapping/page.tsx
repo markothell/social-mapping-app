@@ -112,7 +112,7 @@ export default function MappingPage({
     setHasUnsavedChanges(hasChanges);
   }, [userMappings]);
   
-  const handleTagSelect = (tagId: string) => {
+  const handleTagSelect = (tagId: string | null) => {
     setSelectedTag(tagId);
   };
   
@@ -422,7 +422,7 @@ export default function MappingPage({
         
         .mapping-workspace {
           display: flex;
-          align-items: flex-start;
+          align-items: stretch;
           gap: 2rem;
           margin-bottom: 2rem;
         }
