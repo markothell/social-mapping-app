@@ -67,8 +67,9 @@ export default function MappingPage({
   // Load user's existing mappings
   useEffect(() => {
     if (activity && user) {
-      // Get approved tags
+      // Get approved tags and all tags for restoration
       const approvedTags = activity.tags.filter((tag: any) => tag.status === 'approved');
+      const allTags = activity.tags;
       
       const userMapping = activity.mappings.find((m: any) => m.userId === user.id);
       
@@ -78,8 +79,8 @@ export default function MappingPage({
         const mappedTagIds: string[] = [];
         
         userMapping.positions.forEach((position: any) => {
-          // Find the tag text if we have it
-          const tagInfo = approvedTags.find(tag => tag.id === position.tagId);
+          // Find the tag text from all tags (not just approved ones)
+          const tagInfo = allTags.find(tag => tag.id === position.tagId);
           const tagText = tagInfo?.text || position.text || position.tagId;
           
           // Store the tag text along with the position
@@ -88,7 +89,10 @@ export default function MappingPage({
             text: tagText
           };
           
-          mappedTagIds.push(position.tagId);
+          // Only add to mappedTags if the tag is currently approved
+          if (approvedTags.find(tag => tag.id === position.tagId)) {
+            mappedTagIds.push(position.tagId);
+          }
         });
         
         setUserMappings(mappings);
@@ -296,6 +300,7 @@ export default function MappingPage({
             settings={mappingSettings}
             selectedTag={selectedTag ? approvedTags.find(t => t.id === selectedTag) : null}
             userMappings={userMappings}
+            approvedTagIds={approvedTags.map(tag => tag.id)}
             onPositionTag={handleTagPosition}
           />
         </div>

@@ -37,6 +37,7 @@ interface MappingGridProps {
   settings: MappingSettings;
   selectedTag: Tag | null;
   userMappings: Record<string, Position>;
+  approvedTagIds: string[];
   onPositionTag: (tagId: string, x: number, y: number, annotation?: string) => void;
 }
 
@@ -44,6 +45,7 @@ export default function MappingGrid({
   settings,
   selectedTag,
   userMappings,
+  approvedTagIds,
   onPositionTag
 }: MappingGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -146,47 +148,49 @@ export default function MappingGrid({
             <div className="center-axis horizontal black"></div>
             <div className="center-axis vertical black"></div>
             
-            {/* Position Tags - Explicitly render here to ensure they're contained in the grid */}
-            {Object.entries(userMappings).map(([tagId, position]) => {
-              const displayText = position.text || tagId;
-              
-              // Get tag color
-              const tagColor = getTagColor(tagId);
-              
-              // Default size and text display
-              const size = 2.5; // Default size in rem
-              const fontSize = 0.85;
-              const maxChars = 10;
-              
-              // Truncate text if needed
-              const truncatedText = displayText.length > maxChars
-                ? displayText.substring(0, maxChars - 1) + '…'
-                : displayText;
-              
-              return (
-                <div
-                  key={tagId}
-                  className="positioned-tag"
-                  style={{
-                    left: `${position.x * 100}%`,
-                    top: `${(1 - position.y) * 100}%`,
-                    transform: 'translate(-50%, -50%)',
-                    border: `2px solid ${tagColor}`,
-                    backgroundColor: `${tagColor}40` // 40 = 25% opacity
-                  }}
-                  title={displayText} // Show full text on hover
-                >
-                  <div 
-                    className="tag-content"
-                    style={{ fontSize: `${fontSize}rem` }}
+            {/* Position Tags - Only show approved tags */}
+            {Object.entries(userMappings)
+              .filter(([tagId]) => approvedTagIds.includes(tagId))
+              .map(([tagId, position]) => {
+                const displayText = position.text || tagId;
+                
+                // Get tag color
+                const tagColor = getTagColor(tagId);
+                
+                // Default size and text display
+                const size = 2.5; // Default size in rem
+                const fontSize = 0.85;
+                const maxChars = 10;
+                
+                // Truncate text if needed
+                const truncatedText = displayText.length > maxChars
+                  ? displayText.substring(0, maxChars - 1) + '…'
+                  : displayText;
+                
+                return (
+                  <div
+                    key={tagId}
+                    className="positioned-tag"
+                    style={{
+                      left: `${position.x * 100}%`,
+                      top: `${(1 - position.y) * 100}%`,
+                      transform: 'translate(-50%, -50%)',
+                      border: `2px solid ${tagColor}`,
+                      backgroundColor: `${tagColor}40` // 40 = 25% opacity
+                    }}
+                    title={displayText} // Show full text on hover
                   >
-                    {position.annotation && (
-                      <div className="tag-annotation-indicator" title={position.annotation}>i</div>
-                    )}
+                    <div 
+                      className="tag-content"
+                      style={{ fontSize: `${fontSize}rem` }}
+                    >
+                      {position.annotation && (
+                        <div className="tag-annotation-indicator" title={position.annotation}>i</div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             
             {selectedTag && (
               <div 

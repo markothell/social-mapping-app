@@ -76,8 +76,8 @@ export default function ActivityLayout({
     <div className="activity-layout">
       <header className="app-header">
         <div className="container">
-          <Link href="/" className="logo">
-            Social Mapping App
+          <Link href="/" className="logo" style={{ color: 'var(--logo-color)' }}>
+            Social Insight Tools
           </Link>
           <div className="user-name">
             User: {userName}
@@ -95,7 +95,7 @@ export default function ActivityLayout({
       
       <footer className="app-footer">
         <div className="container">
-          <p>&copy; {new Date().getFullYear()} Social Mapping App</p>
+          <p>Social Insight Tools</p>
         </div>
       </footer>
 
@@ -107,9 +107,9 @@ export default function ActivityLayout({
         }
         
         .app-header {
-          background-color: #1a73e8;
-          color: white;
-          padding: 1rem 0;
+          background-color: #f8f9fa;
+          padding: 1.5rem 0;
+          border-bottom: 1px solid #e8eaed;
         }
         
         .container {
@@ -122,15 +122,18 @@ export default function ActivityLayout({
         }
         
         .user-name {
-          color: white;
+          color: #5f6368;
           font-weight: 500;
           font-size: 0.9rem;
         }
         
-        .logo {
-          font-size: 1.2rem;
-          font-weight: 500;
-          color: white;
+        .app-header {
+          --logo-color: #5f6368;
+        }
+        
+        .app-header .logo {
+          font-size: 2.4rem;
+          font-weight: bold;
           text-decoration: none;
         }
         

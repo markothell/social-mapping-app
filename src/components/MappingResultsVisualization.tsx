@@ -105,11 +105,21 @@ export default function MappingResultsVisualization({
   // Get aggregate positions or participant positions
   const positions = useMemo(() => {
     if (viewMode === 'aggregate') {
+      // Filter to only approved tags
+      const approvedTags = tags.filter(tag => tag.status === 'approved');
+      const approvedTagIds = approvedTags.map(tag => tag.id);
+      
+      // Filter mappings to only include positions for approved tags
+      const filteredMappings = mappings.map(mapping => ({
+        ...mapping,
+        positions: mapping.positions.filter(pos => approvedTagIds.includes(pos.tagId))
+      }));
+      
       // Calculate average positions using our utility function
-      const averagePositions = calculateAveragePositions(mappings, tags);
+      const averagePositions = calculateAveragePositions(filteredMappings, approvedTags);
       
       // Calculate standard deviations and consensus
-      const stdDeviations = calculateStandardDeviations(mappings, averagePositions);
+      const stdDeviations = calculateStandardDeviations(filteredMappings, averagePositions);
       
       // Combine the data for display
       const result: Record<string, Position> = {};
@@ -118,17 +128,15 @@ export default function MappingResultsVisualization({
         const avgPos = averagePositions[tagId];
         const stdDev = stdDeviations[tagId] || { consensus: 1 };
         
-        // Only include tags that have been mapped by at least one participant
-        if (avgPos.count > 0) {
-          result[tagId] = {
-            tagId,
-            x: avgPos.x,
-            y: avgPos.y,
-            count: avgPos.count,
-            text: avgPos.text,
-            consensus: stdDev.consensus
-          };
-        }
+        // Include all approved tags (even unmapped ones will show at 0,0)
+        result[tagId] = {
+          tagId,
+          x: avgPos.x,
+          y: avgPos.y,
+          count: avgPos.count,
+          text: avgPos.text,
+          consensus: stdDev.consensus
+        };
       });
       
       return result;
@@ -139,18 +147,25 @@ export default function MappingResultsVisualization({
       const mapping = mappings.find(m => m.userId === selectedParticipant);
       if (!mapping) return {};
       
+      // Filter to only approved tags
+      const approvedTags = tags.filter(tag => tag.status === 'approved');
+      const approvedTagIds = approvedTags.map(tag => tag.id);
+      
       const participantPositions: Record<string, Position> = {};
       
       mapping.positions.forEach(pos => {
-        const tag = tags.find(t => t.id === pos.tagId);
-        participantPositions[pos.tagId] = {
-          ...pos,
-          text: tag?.text || pos.text || pos.tagId,
-          consensus: 1, // Individual tags have perfect consensus (with themselves)
-          count: 1,
-          // Include all annotations from this user for all tags
-          annotation: pos.annotation || undefined
-        };
+        const tag = approvedTags.find(t => t.id === pos.tagId);
+        // Only include positions for approved tags
+        if (tag && approvedTagIds.includes(pos.tagId)) {
+          participantPositions[pos.tagId] = {
+            ...pos,
+            text: tag.text, // Use the approved tag's text
+            consensus: 1, // Individual tags have perfect consensus (with themselves)
+            count: 1,
+            // Include all annotations from this user for all tags
+            annotation: pos.annotation || undefined
+          };
+        }
       });
       
       return participantPositions;

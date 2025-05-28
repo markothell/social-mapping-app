@@ -177,6 +177,7 @@ export const activityService = {
             tag.status = 'pending';
           }
         }
+        // Note: topN threshold is handled by hybridActivityService to avoid race conditions
       }
       
       activity.updatedAt = new Date();
