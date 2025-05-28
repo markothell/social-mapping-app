@@ -508,7 +508,7 @@ export const hybridActivityService = {
         comments: tag.comments || [],
         commentCount: tag.comments?.length || 0,
         hasNewComments: false,
-        status: activity.settings?.tagCreation?.enableVoting ? 'pending' : 'approved'
+        status: activity.settings?.tagCreation?.enableVoting && activity.settings?.tagCreation?.thresholdType !== 'off' ? 'pending' : 'approved'
       };
       
       activity.tags.push(newTag);
@@ -539,14 +539,8 @@ export const hybridActivityService = {
           timestamp: new Date()
         });
         
-        // Update tag status if threshold is reached
-        if (
-          activity.settings.tagCreation?.enableVoting && 
-          tag.status === 'pending' && 
-          tag.votes.length >= activity.settings.tagCreation.voteThreshold
-        ) {
-          tag.status = 'approved';
-        }
+        // Update tag status based on new threshold logic
+        this.updateTagApprovalStatus(activity);
       }
       
       activity.updatedAt = new Date();
@@ -574,6 +568,78 @@ export const hybridActivityService = {
       activity.updatedAt = new Date();
       return activity;
     });
+  },
+
+  /**
+   * Update tag approval status based on threshold configuration
+   */
+  updateTagApprovalStatus(activity: Activity): void {
+    const tagCreationSettings = activity.settings?.tagCreation;
+    if (!tagCreationSettings?.enableVoting) {
+      // If voting is disabled, approve all pending tags
+      activity.tags.forEach(tag => {
+        if (tag.status === 'pending') {
+          tag.status = 'approved';
+        }
+      });
+      return;
+    }
+
+    const thresholdType = tagCreationSettings.thresholdType || 'minimum';
+    
+    if (thresholdType === 'off') {
+      // No voting required, approve all tags
+      activity.tags.forEach(tag => {
+        if (tag.status === 'pending') {
+          tag.status = 'approved';
+        }
+      });
+    } else if (thresholdType === 'minimum') {
+      // Minimum votes required
+      const minimumVotes = tagCreationSettings.minimumVotes || 1;
+      activity.tags.forEach(tag => {
+        if (tag.status === 'pending' && tag.votes.length >= minimumVotes) {
+          tag.status = 'approved';
+        }
+      });
+    } else if (thresholdType === 'topN') {
+      // Top N ranked tags (with ties included if they have non-zero votes)
+      const topNCount = tagCreationSettings.topNCount || 5;
+      
+      // Sort tags by vote count (descending), then by creation time for ties
+      const sortedTags = [...activity.tags]
+        .filter(tag => (tag.status === 'pending' || tag.status === 'approved') && tag.votes.length > 0)
+        .sort((a, b) => {
+          const votesDiff = b.votes.length - a.votes.length;
+          if (votesDiff !== 0) return votesDiff;
+          // For ties, prefer older tags (assuming creation order)
+          return activity.tags.indexOf(a) - activity.tags.indexOf(b);
+        });
+      
+      // Reset all tags to pending first
+      activity.tags.forEach(tag => {
+        if (tag.status === 'approved') {
+          tag.status = 'pending';
+        }
+      });
+      
+      // Determine the minimum vote count for the Nth position
+      let minVotesForApproval = 0;
+      if (sortedTags.length > 0 && topNCount > 0) {
+        const nthIndex = Math.min(topNCount - 1, sortedTags.length - 1);
+        minVotesForApproval = sortedTags[nthIndex].votes.length;
+      }
+      
+      // Approve all tags that have at least the minimum votes (including ties)
+      sortedTags.forEach(tag => {
+        if (tag.votes.length >= minVotesForApproval && tag.votes.length > 0) {
+          const tagToApprove = activity.tags.find(t => t.id === tag.id);
+          if (tagToApprove) {
+            tagToApprove.status = 'approved';
+          }
+        }
+      });
+    }
   },
 
   /**
@@ -605,6 +671,10 @@ export const hybridActivityService = {
           ...newSettings.results
         }
       };
+      
+      // Re-evaluate tag approval status when settings change
+      this.updateTagApprovalStatus(activity);
+      
       activity.updatedAt = new Date();
       return activity;
     });

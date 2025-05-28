@@ -1,4 +1,16 @@
 // src/models/Activity.ts
+// 
+// ⚠️  CRITICAL: DUAL MODEL ARCHITECTURE ⚠️
+// This TypeScript interface MUST stay in sync with server/models/Activity.js (MongoDB schema)
+// 
+// When updating this model:
+// 1. Update this TypeScript interface
+// 2. Update server/models/Activity.js MongoDB schema  
+// 3. Restart the backend server (node websocket-server.js)
+// 4. Test that data saves/loads correctly
+//
+// Common issue: Frontend saves data but backend schema strips unknown fields
+// Solution: Always update BOTH models when adding new fields
 
 export interface User {
   id: string;
@@ -71,6 +83,9 @@ export interface ActivitySettings {
     instruction: string;
     enableVoting: boolean;
     voteThreshold: number;
+    thresholdType: 'off' | 'minimum' | 'topN';
+    minimumVotes?: number;
+    topNCount?: number;
   };
   mapping?: {
     xAxisLabel: string;
@@ -126,7 +141,9 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
     tagCreation: {
       instruction: 'Add tags for the activity',
       enableVoting: true,
-      voteThreshold: 1
+      voteThreshold: 1,
+      thresholdType: 'minimum',
+      minimumVotes: 1
     }
   };
   

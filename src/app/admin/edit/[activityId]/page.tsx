@@ -20,6 +20,11 @@ export default function EditActivityPage() {
   // Instruction text customization
   const [tagCoreQuestion, setTagCoreQuestion] = useState('');
   const [tagCreationInstruction, setTagCreationInstruction] = useState('Add tags for the activity');
+  
+  // Voting threshold settings
+  const [thresholdType, setThresholdType] = useState('minimum');
+  const [minimumVotes, setMinimumVotes] = useState(1);
+  const [topNCount, setTopNCount] = useState(5);
   const [mappingCoreQuestion, setMappingCoreQuestion] = useState('');
   const [mappingInstruction, setMappingInstruction] = useState('Position each tag on the grid according to your perspective. You can add comments to explain your choices.');
   const [contextInstructions, setContextInstructions] = useState('Why did you position this here?');
@@ -49,6 +54,7 @@ export default function EditActivityPage() {
         if (activity) {
           // Debug: Log the actual activity data
           console.log('Loading activity for edit:', JSON.stringify(activity, null, 2));
+          console.log('Tag creation settings:', JSON.stringify(activity.settings?.tagCreation, null, 2));
           
           // Populate form with existing data
           setActivityType(activity.type || 'mapping');
@@ -59,6 +65,12 @@ export default function EditActivityPage() {
           // Tag creation settings
           setTagCoreQuestion((activity.settings?.tagCreation as any)?.coreQuestion || '');
           setTagCreationInstruction(activity.settings?.tagCreation?.instruction || 'Add tags for the activity');
+          
+          // Voting threshold settings
+          const tagCreationSettings = activity.settings?.tagCreation;
+          setThresholdType(tagCreationSettings?.thresholdType || 'minimum');
+          setMinimumVotes(tagCreationSettings?.minimumVotes || 1);
+          setTopNCount(tagCreationSettings?.topNCount || 5);
           
           // Mapping settings
           setMappingCoreQuestion((activity.settings?.mapping as any)?.coreQuestion || '');
@@ -102,8 +114,11 @@ export default function EditActivityPage() {
         tagCreation: {
           coreQuestion: tagCoreQuestion,
           instruction: tagCreationInstruction,
-          enableVoting: true,
-          voteThreshold: 1
+          enableVoting: thresholdType !== 'off',
+          voteThreshold: thresholdType === 'minimum' ? minimumVotes : 1,
+          thresholdType,
+          minimumVotes: thresholdType === 'minimum' ? minimumVotes : undefined,
+          topNCount: thresholdType === 'topN' ? topNCount : undefined
         },
         mapping: {
           coreQuestion: mappingCoreQuestion,
@@ -268,6 +283,47 @@ export default function EditActivityPage() {
                   rows={3}
                 />
               </div>
+              
+              <div className="form-group">
+                <label htmlFor="thresholdType">Voting Threshold</label>
+                <select
+                  id="thresholdType"
+                  value={thresholdType}
+                  onChange={(e) => setThresholdType(e.target.value)}
+                >
+                  <option value="off">Off - No voting required</option>
+                  <option value="minimum">Minimum votes required</option>
+                  <option value="topN">Top N ranked tags</option>
+                </select>
+              </div>
+              
+              {thresholdType === 'minimum' && (
+                <div className="form-group">
+                  <label htmlFor="minimumVotes">Minimum Votes Required</label>
+                  <input
+                    type="number"
+                    id="minimumVotes"
+                    value={minimumVotes}
+                    onChange={(e) => setMinimumVotes(parseInt(e.target.value) || 1)}
+                    min="1"
+                    placeholder="Number of votes required"
+                  />
+                </div>
+              )}
+              
+              {thresholdType === 'topN' && (
+                <div className="form-group">
+                  <label htmlFor="topNCount">Number of Top Tags</label>
+                  <input
+                    type="number"
+                    id="topNCount"
+                    value={topNCount}
+                    onChange={(e) => setTopNCount(parseInt(e.target.value) || 1)}
+                    min="1"
+                    placeholder="Number of top ranked tags to include"
+                  />
+                </div>
+              )}
             </div>
             
             <div className="form-section">

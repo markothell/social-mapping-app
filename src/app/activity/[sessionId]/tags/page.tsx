@@ -134,6 +134,21 @@ export default function TagsPage({
   const tagCreationEnabled = activity.phase === 'tagging' || activity.phase === 'gathering';
   const votingEnabled = activity.settings.tagCreation?.enableVoting;
   const voteThreshold = activity.settings.tagCreation?.voteThreshold || 2;
+  const thresholdType = activity.settings.tagCreation?.thresholdType || 'minimum';
+  const minimumVotes = activity.settings.tagCreation?.minimumVotes || 1;
+  const topNCount = activity.settings.tagCreation?.topNCount || 5;
+  
+  // Generate voting instruction text based on threshold type
+  const getVotingInstruction = () => {
+    if (thresholdType === 'off' || !votingEnabled) {
+      return '';
+    } else if (thresholdType === 'minimum') {
+      return ` Sub-topics require ${minimumVotes} vote${minimumVotes === 1 ? '' : 's'} to be included in mapping.`;
+    } else if (thresholdType === 'topN') {
+      return ` The ${topNCount} sub-topics with the most votes will be included in the next stages.`;
+    }
+    return '';
+  };
   
   // Count approved tags
   const approvedTags = activity.tags.filter((tag: any) => tag.status === 'approved');
@@ -151,7 +166,7 @@ export default function TagsPage({
         <div className="tags-header">
           <h1 className="core-question">{activity.settings.tagCreation?.coreQuestion || 'What topics should we explore?'}</h1>
           <p className="instruction">
-            {activity.settings.tagCreation?.instruction || 'Add tags for the activity'}
+            {activity.settings.tagCreation?.instruction || 'Add tags for the activity'}{getVotingInstruction()}
           </p>
         </div>
 

@@ -155,36 +155,43 @@ export default function TagList({
               key={tag.id} 
               className={`tag-item ${tag.status === 'approved' ? 'approved' : 'pending'}`}
             >
-              <div className="tag-content">
+              <div className="tag-row">
                 <div className="tag-text">{tag.text}</div>
-                <div className="tag-meta">
-                  <span className="tag-creator">Added by: {tag.creatorName || 'Anonymous'}</span>
-                  {votingEnabled && (
-                    <span className="vote-status">
-                      {tag.votes.length}/{voteThreshold} votes needed
-                      {tag.status === 'approved' && ' (Approved)'}
+                <div className="vote-controls">
+                  {votingEnabled && currentUser && canUserVote(tag) ? (
+                    <button
+                      onClick={(e) => handleVoteTag(tag.id, e)}
+                      className={`vote-button ${hasUserVoted(tag) ? 'voted' : ''}`}
+                      title={hasUserVoted(tag) ? 'Remove your vote' : 'Vote for this tag'}
+                    >
+                      <div className="vote-arrow">
+                        <div className="arrow-triangle"></div>
+                      </div>
+                    </button>
+                  ) : votingEnabled && currentUser && tag.creatorId === currentUser.id ? (
+                    <span
+                      className="vote-button creator-vote"
+                      title="You cannot vote on your own tag"
+                    >
+                      <div className="vote-arrow">
+                        <div className="arrow-triangle"></div>
+                      </div>
                     </span>
+                  ) : null}
+                  {votingEnabled && (
+                    <span className="vote-count">({tag.votes.length})</span>
                   )}
                 </div>
               </div>
-              <div className="tag-actions">
-                {votingEnabled && currentUser && canUserVote(tag) ? (
-                  <button
-                    onClick={(e) => handleVoteTag(tag.id, e)}
-                    className={`vote-button ${hasUserVoted(tag) ? 'voted' : ''}`}
-                  >
-                    {hasUserVoted(tag) ? 'Unvote' : 'Vote'}
-                    <span className="vote-count">{tag.votes.length}</span>
-                  </button>
-                ) : tag.creatorId === currentUser?.id && (
-                  <span className="creator-note">Your tag</span>
-                )}
+              <div className="tag-row">
+                <span className="tag-creator">Added by: {tag.creatorName || 'Anonymous'}</span>
                 {(isAdmin || (currentUser && tag.creatorId === currentUser.id)) && (
                   <button
                     onClick={(e) => handleDeleteTag(tag.id, e)}
                     className="delete-button"
+                    title="Delete tag"
                   >
-                    Delete
+                    🗑️
                   </button>
                 )}
               </div>
@@ -239,13 +246,10 @@ export default function TagList({
         }
         
         .tag-item {
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
           background-color: white;
           border-radius: 8px;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          padding: 1rem;
+          padding: 0.5rem;
           border-left: 4px solid #fbbc04;
         }
         
@@ -253,84 +257,107 @@ export default function TagList({
           border-left-color: #34a853;
         }
         
-        .tag-content {
-          margin-bottom: 1rem;
+        .tag-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.25rem;
+        }
+        
+        .tag-row:last-child {
+          margin-bottom: 0;
         }
         
         .tag-text {
           font-size: 1.1rem;
           color: #202124;
-          margin-bottom: 0.5rem;
           word-break: break-word;
+          flex: 1;
         }
         
-        .tag-meta {
+        .vote-controls {
           display: flex;
-          justify-content: space-between;
+          align-items: center;
+          gap: 0.125rem;
+        }
+        
+        .tag-creator {
           font-size: 0.8rem;
           color: #5f6368;
-        }
-        
-        .tag-actions {
-          display: flex;
-          justify-content: space-between;
         }
         
         .vote-button {
-          display: flex;
-          align-items: center;
-          background-color: #f1f3f4;
+          background: none;
           border: none;
-          border-radius: 4px;
-          padding: 0.5rem 0.75rem;
-          font-size: 0.9rem;
           cursor: pointer;
-          transition: background-color 0.2s;
+          padding: 0.25rem;
+          border-radius: 3px;
+          transition: all 0.2s;
         }
         
         .vote-button:hover {
-          background-color: #e8eaed;
+          background-color: #f0f0f0;
         }
         
-        .vote-button.voted {
-          background-color: #e8f0fe;
-          color: #1a73e8;
+        .vote-button.voted .vote-arrow {
+          border-color: #34a853;
+          background-color: #e8f5e8;
+        }
+        
+        .vote-button.voted .arrow-triangle {
+          border-bottom-color: #34a853;
+        }
+        
+        .vote-button.creator-vote {
+          cursor: default;
+        }
+        
+        .vote-button.creator-vote .vote-arrow {
+          border-color: #34a853;
+        }
+        
+        .vote-button.creator-vote .arrow-triangle {
+          border-bottom-color: #34a853;
+        }
+        
+        .vote-arrow {
+          width: 24px;
+          height: 24px;
+          border: 1.5px solid #9aa0a6;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        
+        .arrow-triangle {
+          width: 0;
+          height: 0;
+          border-left: 4px solid transparent;
+          border-right: 4px solid transparent;
+          border-bottom: 6px solid #9aa0a6;
+          transition: all 0.2s;
         }
         
         .vote-count {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: 0.5rem;
-          background-color: white;
-          color: #202124;
-          width: 1.5rem;
-          height: 1.5rem;
-          border-radius: 50%;
-          font-size: 0.8rem;
-          font-weight: 500;
-        }
-        
-        .creator-note {
           font-size: 0.9rem;
           color: #5f6368;
-          font-style: italic;
-          align-self: center;
+          margin-left: 0.125rem;
         }
         
         .delete-button {
-          background-color: #fdeded;
-          color: #ea4335;
+          background: none;
           border: none;
-          border-radius: 4px;
-          padding: 0.5rem 0.75rem;
-          font-size: 0.9rem;
+          font-size: 1rem;
           cursor: pointer;
+          padding: 0.25rem;
+          border-radius: 3px;
           transition: background-color 0.2s;
         }
         
         .delete-button:hover {
-          background-color: #fad2d2;
+          background-color: #ffeaea;
         }
         
         .no-tags {
