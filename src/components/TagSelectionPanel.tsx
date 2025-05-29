@@ -10,21 +10,37 @@ interface Tag {
   status: string;
 }
 
+interface TagInstance {
+  id: string;
+  tagId: string;
+  instanceId?: string;
+  text: string;
+  status: string;
+  annotation?: string;
+}
+
 interface TagSelectionPanelProps {
   tags: Tag[];
-  mappedTags: string[];
+  tagInstances: TagInstance[];
   selectedTag: string | null;
-  onSelectTag: (tagId: string | null) => void;
+  selectedInstanceId?: string | null;
+  onSelectTag: (tagId: string | null, instanceId?: string | null) => void;
+  onAddTagInstance?: (tagId: string) => void;
+  onRemoveTagInstance?: (tagId: string, instanceId?: string) => void;
 }
 
 export default function TagSelectionPanel({
   tags,
-  mappedTags,
+  tagInstances,
   selectedTag,
-  onSelectTag
+  selectedInstanceId,
+  onSelectTag,
+  onAddTagInstance,
+  onRemoveTagInstance
 }: TagSelectionPanelProps) {
   const [filter, setFilter] = useState<'all' | 'unmapped' | 'mapped'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
   if (!tags || tags.length === 0) {
     return (
@@ -39,26 +55,56 @@ export default function TagSelectionPanel({
     );
   }
   
-  // Filter tags based on selected filter and search term
-  const filteredTags = tags.filter(tag => {
+  // Create a combined list: unmapped tags + mapped instances
+  const allDisplayItems = [];
+  
+  // Add unmapped approved tags only
+  const mappedTagIds = new Set(tagInstances.map(instance => instance.tagId));
+  const unmappedTags = tags.filter(tag => !mappedTagIds.has(tag.id) && tag.status === 'approved');
+  unmappedTags.forEach(tag => {
+    allDisplayItems.push({
+      id: tag.id,
+      tagId: tag.id,
+      text: tag.text,
+      status: tag.status,
+      isMapped: false,
+      isInstance: false
+    });
+  });
+  
+  // Add mapped instances
+  tagInstances.forEach(instance => {
+    allDisplayItems.push({
+      id: instance.id,
+      tagId: instance.tagId,
+      instanceId: instance.instanceId,
+      text: instance.text,
+      status: instance.status,
+      annotation: instance.annotation,
+      isMapped: true,
+      isInstance: true
+    });
+  });
+  
+  // Filter items based on selected filter and search term
+  const filteredItems = allDisplayItems.filter(item => {
     // First apply the mapping filter
     if (filter !== 'all') {
-      const isMapped = mappedTags.includes(tag.id);
-      if (filter === 'mapped' && !isMapped) return false;
-      if (filter === 'unmapped' && isMapped) return false;
+      if (filter === 'mapped' && !item.isMapped) return false;
+      if (filter === 'unmapped' && item.isMapped) return false;
     }
     
     // Then apply the search filter if there's a search term
     if (searchTerm.trim() !== '') {
-      return tag.text.toLowerCase().includes(searchTerm.toLowerCase());
+      return item.text.toLowerCase().includes(searchTerm.toLowerCase());
     }
     
     return true;
   });
 
   // Count mapped and unmapped tags
-  const mappedCount = mappedTags.length;
-  const unmappedCount = tags.length - mappedCount;
+  const mappedCount = tagInstances.length;
+  const unmappedCount = tags.length - mappedTagIds.size;
 
   return (
     <div className="tag-selection-panel">
@@ -108,27 +154,74 @@ export default function TagSelectionPanel({
         </div>
       </div>
       
-      {filteredTags.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <div className="no-tags">
           <p>No tags match the current filter</p>
         </div>
       ) : (
         <div className="tag-list">
-          {filteredTags.map(tag => {
-            const isMapped = mappedTags.includes(tag.id);
-            const isSelected = selectedTag === tag.id;
-            
-            const tagColor = getTagColor(tag.id);
+          {filteredItems.map(item => {
+            const isSelected = item.isMapped 
+              ? selectedInstanceId === item.instanceId 
+              : selectedTag === item.tagId;
+            const tagColor = getTagColor(item.tagId);
             
             return (
-              <div
-                key={tag.id}
-                className={`tag-item ${isMapped ? 'mapped' : ''} ${isSelected ? 'selected' : ''}`}
-                onClick={() => onSelectTag(isSelected ? null : tag.id)}
-                style={{ borderLeft: `4px solid ${tagColor}` }}
-              >
-                <div className="color-indicator" style={{ backgroundColor: tagColor }}></div>
-                <div className="tag-text">{tag.text}</div>
+              <div key={item.id} className={`tag-item-container ${item.isMapped ? 'mapped' : ''}`}>
+                <div
+                  className={`tag-item ${item.isMapped ? 'mapped' : ''} ${isSelected ? 'selected' : ''}`}
+                  onClick={() => onSelectTag(
+                    isSelected ? null : item.tagId, 
+                    isSelected ? null : (item.isMapped ? item.instanceId : null)
+                  )}
+                  style={{ 
+                    borderLeft: `4px solid ${tagColor}`,
+                    borderRight: `4px solid ${tagColor}`
+                  }}
+                >
+                  <div className="tag-content">
+                    <div className="tag-text">{item.text}</div>
+                  </div>
+                </div>
+                
+                {item.isMapped && onAddTagInstance && onRemoveTagInstance && (
+                  <div className="tag-menu">
+                    <button
+                      className="menu-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(openMenuId === item.id ? null : item.id);
+                      }}
+                      title="Tag options"
+                    >
+                      ⋮
+                    </button>
+                    {openMenuId === item.id && (
+                      <div className="menu-dropdown">
+                        <button
+                          className="menu-item add-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddTagInstance(item.tagId);
+                            setOpenMenuId(null);
+                          }}
+                        >
+                          Add
+                        </button>
+                        <button
+                          className="menu-item remove-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveTagInstance(item.tagId, item.instanceId);
+                            setOpenMenuId(null);
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -152,7 +245,7 @@ export default function TagSelectionPanel({
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           display: flex;
           flex-direction: column;
-          height: calc(600px + 4rem);
+          height: calc(600px + 250px + 2rem);
         }
         
         .panel-header {
@@ -264,6 +357,10 @@ export default function TagSelectionPanel({
           gap: 0.75rem;
           padding-right: 0.25rem;
         }
+        
+        .tag-item-container {
+          position: relative;
+        }
 
         /* Custom scrollbar */
         .tag-list::-webkit-scrollbar {
@@ -306,13 +403,63 @@ export default function TagSelectionPanel({
           border-color: #bbb;
         }
         
-        .color-indicator {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
+        .tag-menu {
           position: absolute;
           top: 0.5rem;
           right: 0.75rem;
+        }
+        
+        .menu-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 1.2rem;
+          color: #5f6368;
+          padding: 0.2rem;
+          border-radius: 3px;
+          transition: all 0.2s;
+        }
+        
+        .menu-button:hover {
+          background-color: #f1f3f4;
+          color: #202124;
+        }
+        
+        .menu-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          background-color: white;
+          border: 1px solid #dadce0;
+          border-radius: 4px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+          z-index: 1000;
+          min-width: 140px;
+        }
+        
+        .menu-item {
+          display: block;
+          width: 100%;
+          background: none;
+          border: none;
+          padding: 0.5rem 0.75rem;
+          text-align: left;
+          cursor: pointer;
+          font-size: 0.85rem;
+          color: #202124;
+          transition: background-color 0.2s;
+        }
+        
+        .menu-item:hover {
+          background-color: #f8f9fa;
+        }
+        
+        .add-item {
+          color: #1a73e8;
+        }
+        
+        .remove-item {
+          color: #ea4335;
         }
         
         .tag-item.selected {
@@ -321,14 +468,32 @@ export default function TagSelectionPanel({
           background-color: #e8f0fe;
         }
         
+        .tag-content {
+          display: flex;
+          align-items: center;
+          flex: 1;
+          padding-right: 2rem;
+        }
+        
         .tag-text {
           font-size: 0.95rem;
           margin-bottom: 0;
           color: #202124;
-          padding-right: 1.5rem;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          flex: 1;
+        }
+        
+        .tag-annotation {
+          font-size: 0.8rem;
+          color: #5f6368;
+          font-style: italic;
+          margin-left: 0.5rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 120px;
         }
         
         .no-tags {

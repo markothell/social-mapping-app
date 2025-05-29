@@ -29,6 +29,7 @@ interface Participant {
 
 interface Position {
   tagId: string;
+  instanceId?: string;
   x: number;
   y: number;
   annotation?: string;
@@ -75,7 +76,7 @@ export default function MappingResultsVisualization({
   const [viewMode, setViewMode] = useState<'aggregate' | 'individual'>('aggregate');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [hoveredComment, setHoveredComment] = useState<{ tagId: string | null, userId: string | null }>({ tagId: null, userId: null });
+  const [hoveredComment, setHoveredComment] = useState<{ tagId: string | null, userId: string | null, x?: number, y?: number }>({ tagId: null, userId: null });
   const [hoveredTag, setHoveredTag] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'statistics' | 'comments' | 'individual-mappings'>('statistics');
   
@@ -115,28 +116,49 @@ export default function MappingResultsVisualization({
         positions: mapping.positions.filter(pos => approvedTagIds.includes(pos.tagId))
       }));
       
-      // Calculate average positions using our utility function
-      const averagePositions = calculateAveragePositions(filteredMappings, approvedTags);
+      // Group positions by tag and instance for multiple instances support
+      const tagInstanceGroups: Record<string, { positions: Position[], text: string }> = {};
       
-      // Calculate standard deviations and consensus
-      const stdDeviations = calculateStandardDeviations(filteredMappings, averagePositions);
+      filteredMappings.forEach(mapping => {
+        mapping.positions.forEach(pos => {
+          const key = pos.tagId; // Group all instances of the same tag together
+          
+          if (!tagInstanceGroups[key]) {
+            const tag = approvedTags.find(t => t.id === pos.tagId);
+            tagInstanceGroups[key] = {
+              positions: [],
+              text: tag?.text || pos.text || pos.tagId
+            };
+          }
+          
+          tagInstanceGroups[key].positions.push(pos);
+        });
+      });
       
-      // Combine the data for display
+      // Calculate average positions for each tag instance
       const result: Record<string, Position> = {};
       
-      Object.keys(averagePositions).forEach(tagId => {
-        const avgPos = averagePositions[tagId];
-        const stdDev = stdDeviations[tagId] || { consensus: 1 };
-        
-        // Include all approved tags (even unmapped ones will show at 0,0)
-        result[tagId] = {
-          tagId,
-          x: avgPos.x,
-          y: avgPos.y,
-          count: avgPos.count,
-          text: avgPos.text,
-          consensus: stdDev.consensus
-        };
+      Object.entries(tagInstanceGroups).forEach(([key, group]) => {
+        if (group.positions.length > 0) {
+          const avgX = group.positions.reduce((sum, pos) => sum + pos.x, 0) / group.positions.length;
+          const avgY = group.positions.reduce((sum, pos) => sum + pos.y, 0) / group.positions.length;
+          
+          // Calculate consensus (inverse of standard deviation)
+          const stdDevX = Math.sqrt(group.positions.reduce((sum, pos) => sum + Math.pow(pos.x - avgX, 2), 0) / group.positions.length);
+          const stdDevY = Math.sqrt(group.positions.reduce((sum, pos) => sum + Math.pow(pos.y - avgY, 2), 0) / group.positions.length);
+          const combinedStdDev = (stdDevX + stdDevY) / 2;
+          const consensus = Math.max(0, 1 - Math.min(1, combinedStdDev * 2));
+          
+          result[key] = {
+            tagId: group.positions[0].tagId,
+            instanceId: group.positions[0].instanceId,
+            x: avgX,
+            y: avgY,
+            count: group.positions.length,
+            text: group.text,
+            consensus: consensus
+          };
+        }
       });
       
       return result;
@@ -157,7 +179,8 @@ export default function MappingResultsVisualization({
         const tag = approvedTags.find(t => t.id === pos.tagId);
         // Only include positions for approved tags
         if (tag && approvedTagIds.includes(pos.tagId)) {
-          participantPositions[pos.tagId] = {
+          const key = pos.instanceId ? `${pos.tagId}_${pos.instanceId}` : pos.tagId;
+          participantPositions[key] = {
             ...pos,
             text: tag.text, // Use the approved tag's text
             consensus: 1, // Individual tags have perfect consensus (with themselves)
@@ -205,37 +228,40 @@ export default function MappingResultsVisualization({
   const getTagStats = () => {
     if (!selectedTag) return null;
     
-    const tag = tags.find(t => t.id === selectedTag);
+    const tagId = selectedTag; // selectedTag is now just the tagId
+    const tag = tags.find(t => t.id === tagId);
     if (!tag) return null;
     
-    // Count mappings
+    // Count mappings for this specific instance
     let mappingCount = 0;
     let averageX = 0;
     let averageY = 0;
     let stdDevX = 0;
     let stdDevY = 0;
     
-    // Calculate average position
+    // Calculate average position for all instances of this tag
     mappings.forEach(mapping => {
-      const position = mapping.positions.find(p => p.tagId === selectedTag);
-      if (position) {
-        mappingCount++;
-        averageX += position.x;
-        averageY += position.y;
-      }
+      mapping.positions.forEach(position => {
+        if (position.tagId === selectedTag) {
+          mappingCount++;
+          averageX += position.x;
+          averageY += position.y;
+        }
+      });
     });
     
     if (mappingCount > 0) {
       averageX /= mappingCount;
       averageY /= mappingCount;
       
-      // Calculate standard deviation
+      // Calculate standard deviation for all instances of this tag
       mappings.forEach(mapping => {
-        const position = mapping.positions.find(p => p.tagId === selectedTag);
-        if (position) {
-          stdDevX += Math.pow(position.x - averageX, 2);
-          stdDevY += Math.pow(position.y - averageY, 2);
-        }
+        mapping.positions.forEach(position => {
+          if (position.tagId === selectedTag) {
+            stdDevX += Math.pow(position.x - averageX, 2);
+            stdDevY += Math.pow(position.y - averageY, 2);
+          }
+        });
       });
       
       stdDevX = Math.sqrt(stdDevX / mappingCount);
@@ -257,20 +283,35 @@ export default function MappingResultsVisualization({
     // Calculate consensus (inverse of standard deviation)
     const consensus = 1 - Math.min(1, (stdDevX + stdDevY) / 2);
     
-    // Get annotations
-    const annotations = getTagAnnotations(mappings, selectedTag);
-    
-    // Get individual mappings for this tag
-    const individualMappings = mappings
-      .filter(mapping => mapping.positions.some(pos => pos.tagId === selectedTag))
-      .map(mapping => {
-        const position = mapping.positions.find(pos => pos.tagId === selectedTag);
-        return {
-          userId: mapping.userId,
-          userName: mapping.userName,
-          position: position
-        };
+    // Get annotations for this specific instance
+    const annotations: Array<{ text: string; userName: string; x: number; y: number; userId: string }> = [];
+    mappings.forEach(mapping => {
+      mapping.positions.forEach(position => {
+        if (position.tagId === selectedTag && position.annotation) {
+          annotations.push({
+            text: position.annotation,
+            userName: mapping.userName,
+            x: position.x,
+            y: position.y,
+            userId: mapping.userId
+          });
+        }
       });
+    });
+    
+    // Get individual mappings for this tag (all instances)
+    const individualMappings: any[] = [];
+    mappings.forEach(mapping => {
+      mapping.positions.forEach(position => {
+        if (position.tagId === selectedTag) {
+          individualMappings.push({
+            userId: mapping.userId,
+            userName: mapping.userName,
+            position: position
+          });
+        }
+      });
+    });
     
     return {
       tag,
@@ -303,10 +344,14 @@ export default function MappingResultsVisualization({
     const mapping = mappings.find(m => m.userId === selectedParticipant);
     if (!mapping) return [];
     
+    // Filter to only approved tags
+    const approvedTags = tags.filter(tag => tag.status === 'approved');
+    const approvedTagIds = approvedTags.map(tag => tag.id);
+    
     return mapping.positions
-      .filter(pos => pos.annotation)
+      .filter(pos => pos.annotation && approvedTagIds.includes(pos.tagId))
       .map(pos => {
-        const tag = tags.find(t => t.id === pos.tagId);
+        const tag = approvedTags.find(t => t.id === pos.tagId);
         return {
           tagId: pos.tagId,
           tagText: tag?.text || 'Unknown Tag',
@@ -378,7 +423,39 @@ export default function MappingResultsVisualization({
               setSelectedTag(tagId === selectedTag ? null : tagId);
             }
           }}
-          onHoverTag={(tagId) => setHoveredTag(tagId)}
+          onHoverTag={(hoverInfo) => {
+            setHoveredTag(hoverInfo);
+            
+            // Parse hover info to set hoveredComment for reverse highlighting
+            if (hoverInfo && hoverInfo.includes('-')) {
+              const parts = hoverInfo.split('-');
+              if (parts.length >= 3) {
+                // For individual view: tagId-x-y
+                if (viewMode === 'individual' && parts.length === 3) {
+                  const [tagId, x, y] = parts;
+                  setHoveredComment({ 
+                    tagId, 
+                    userId: selectedParticipant, 
+                    x: parseFloat(x), 
+                    y: parseFloat(y) 
+                  });
+                }
+                // For aggregate view: selectedTag-userId-x-y
+                else if (viewMode === 'aggregate' && parts.length >= 4) {
+                  const [tagId, userId, x, y] = parts;
+                  setHoveredComment({ 
+                    tagId, 
+                    userId, 
+                    x: parseFloat(x), 
+                    y: parseFloat(y) 
+                  });
+                }
+              }
+            } else if (!hoverInfo) {
+              // Clear hover when no longer hovering
+              setHoveredComment({ tagId: null, userId: null });
+            }
+          }}
           participantName={viewMode === 'individual' ? 
             mappings.find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
         />
@@ -411,24 +488,28 @@ export default function MappingResultsVisualization({
                   {tagStats.annotations.length > 0 ? (
                     <div className="annotation-list">
                       {tagStats.annotations.map((annotation, idx) => {
-                        // Find mapping with this userName
-                        const mapping = mappings.find(m => m.userName === annotation.userName);
-                        const userId = mapping?.userId;
-                        
                         return (
                           <div 
                             key={idx} 
-                            className={`annotation-item ${hoveredTag === selectedTag ? 'tag-hovered' : ''}`}
-                            onClick={() => userId && handleCommentClick(userId)}
-                            onMouseEnter={() => setHoveredComment({ tagId: selectedTag, userId: userId || null })}
+                            className={`annotation-item ${
+                              (hoveredTag === selectedTag) || 
+                              (hoveredComment?.tagId === selectedTag && hoveredComment?.userId === annotation.userId && 
+                               hoveredComment?.x === annotation.x && hoveredComment?.y === annotation.y) 
+                              ? 'tag-hovered' : ''
+                            }`}
+                            onClick={() => handleCommentClick(annotation.userId)}
+                            onMouseEnter={() => setHoveredComment({ 
+                              tagId: selectedTag, 
+                              userId: annotation.userId, 
+                              x: annotation.x, 
+                              y: annotation.y 
+                            })}
                             onMouseLeave={() => setHoveredComment({ tagId: null, userId: null })}
                           >
                             <div className="annotation-content">{annotation.text}</div>
                             <div className="annotation-author">
                               — {annotation.userName}
-                              {userId && (
-                                <span className="view-map-link"> (Click to view map)</span>
-                              )}
+                              <span className="view-map-link"> (Click to view map)</span>
                             </div>
                           </div>
                         );
@@ -454,8 +535,18 @@ export default function MappingResultsVisualization({
                         {participantComments.map((comment, idx) => (
                           <div 
                             key={idx} 
-                            className={`annotation-item ${hoveredTag === comment.tagId ? 'tag-hovered' : ''}`}
-                            onMouseEnter={() => setHoveredComment({ tagId: comment.tagId, userId: selectedParticipant })}
+                            className={`annotation-item ${
+                              (hoveredTag === comment.tagId) ||
+                              (hoveredComment?.tagId === comment.tagId && hoveredComment?.userId === selectedParticipant && 
+                               hoveredComment?.x === comment.position.x && hoveredComment?.y === comment.position.y) 
+                              ? 'tag-hovered' : ''
+                            }`}
+                            onMouseEnter={() => setHoveredComment({ 
+                              tagId: comment.tagId, 
+                              userId: selectedParticipant, 
+                              x: comment.position.x, 
+                              y: comment.position.y 
+                            })}
                             onMouseLeave={() => setHoveredComment({ tagId: null, userId: null })}
                           >
                             <div className="tag-title">{comment.tagText}</div>

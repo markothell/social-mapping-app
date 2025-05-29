@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { getTagColor } from '@/utils/mappingDataUtils';
 
 interface MappingSettings {
@@ -36,6 +36,7 @@ interface Position {
 interface MappingGridProps {
   settings: MappingSettings;
   selectedTag: Tag | null;
+  selectedInstanceId?: string | null;
   userMappings: Record<string, Position>;
   approvedTagIds: string[];
   onPositionTag: (tagId: string, x: number, y: number, annotation?: string) => void;
@@ -44,23 +45,12 @@ interface MappingGridProps {
 export default function MappingGrid({
   settings,
   selectedTag,
+  selectedInstanceId,
   userMappings,
   approvedTagIds,
   onPositionTag
 }: MappingGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [showAnnotationModal, setShowAnnotationModal] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState<{x: number, y: number} | null>(null);
-  const [annotation, setAnnotation] = useState('');
-  
-  // Reset annotation when tag changes
-  useEffect(() => {
-    if (selectedTag && userMappings[selectedTag.id]?.annotation) {
-      setAnnotation(userMappings[selectedTag.id].annotation || '');
-    } else {
-      setAnnotation('');
-    }
-  }, [selectedTag, userMappings]);
   
   // Handle grid click
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -76,30 +66,10 @@ export default function MappingGrid({
     const clampedX = Math.max(0, Math.min(1, relativeX));
     const clampedY = Math.max(0, Math.min(1, 1 - relativeY)); // Invert Y so 0 is bottom and 1 is top
     
-    setCurrentPosition({ x: clampedX, y: clampedY });
-    
-    if (settings.enableAnnotations) {
-      setShowAnnotationModal(true);
-    } else {
-      onPositionTag(selectedTag.id, clampedX, clampedY);
-    }
+    // Always position tag directly - context will be added in the persistent context box
+    onPositionTag(selectedTag.id, clampedX, clampedY);
   };
   
-  // Handle saving annotation
-  const handleSaveAnnotation = () => {
-    if (!selectedTag || !currentPosition) return;
-    
-    onPositionTag(
-      selectedTag.id,
-      currentPosition.x,
-      currentPosition.y,
-      annotation
-    );
-    
-    setShowAnnotationModal(false);
-    setCurrentPosition(null);
-    setAnnotation('');
-  };
   
   // Render positioned tags
   const renderPositionedTags = () => {
@@ -148,14 +118,19 @@ export default function MappingGrid({
             <div className="center-axis horizontal black"></div>
             <div className="center-axis vertical black"></div>
             
-            {/* Position Tags - Only show approved tags */}
+            {/* Position Tags - Only show approved tags and non-placeholder instances */}
             {Object.entries(userMappings)
-              .filter(([tagId]) => approvedTagIds.includes(tagId))
-              .map(([tagId, position]) => {
-                const displayText = position.text || tagId;
+              .filter(([, position]) => approvedTagIds.includes(position.tagId) && !position.isPlaceholder)
+              .map(([positionKey, position]) => {
+                const displayText = position.text || position.tagId;
                 
                 // Get tag color
-                const tagColor = getTagColor(tagId);
+                const tagColor = getTagColor(position.tagId);
+                
+                // Check if this positioned tag is selected
+                const isSelected = selectedInstanceId 
+                  ? position.instanceId === selectedInstanceId
+                  : selectedTag?.id === position.tagId;
                 
                 // Default size and text display
                 const size = 2.5; // Default size in rem
@@ -169,8 +144,8 @@ export default function MappingGrid({
                 
                 return (
                   <div
-                    key={tagId}
-                    className="positioned-tag"
+                    key={positionKey}
+                    className={`positioned-tag ${isSelected ? 'selected' : ''}`}
                     style={{
                       left: `${position.x * 100}%`,
                       top: `${(1 - position.y) * 100}%`,
@@ -213,46 +188,6 @@ export default function MappingGrid({
         <div className="direction-label bottom">{settings.yAxisMinLabel || settings.yAxisBottomLabel}</div>
       </div>
       
-      {/* Annotation Modal */}
-      {showAnnotationModal && selectedTag && (
-        <div className="annotation-modal-overlay">
-          <div className="annotation-modal">
-            <h3>Add Context</h3>
-            <p>{settings.contextInstructions || `Why did you position "${selectedTag.text}" here?`}</p>
-            
-            <textarea
-              value={annotation}
-              onChange={(e) => setAnnotation(e.target.value)}
-              placeholder="Add your reasoning here..."
-              maxLength={settings.maxAnnotationLength}
-              rows={4}
-            ></textarea>
-            
-            <div className="character-counter">
-              {annotation.length}/{settings.maxAnnotationLength}
-            </div>
-            
-            <div className="modal-actions">
-              <button 
-                className="cancel-button"
-                onClick={() => {
-                  setShowAnnotationModal(false);
-                  setCurrentPosition(null);
-                  setAnnotation('');
-                }}
-              >
-                Cancel
-              </button>
-              <button 
-                className="save-button"
-                onClick={handleSaveAnnotation}
-              >
-                Save Position
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         .mapping-grid-container {
@@ -361,6 +296,13 @@ export default function MappingGrid({
           box-sizing: border-box;
           width: 2.5rem;
           height: 2.5rem;
+          transition: all 0.2s ease;
+        }
+        
+        .positioned-tag.selected {
+          z-index: 101;
+          box-shadow: 0 0 0 3px #1a73e8, 0 4px 8px rgba(0, 0, 0, 0.2);
+          transform: translate(-50%, -50%) scale(1.1);
         }
         
         /* Ensure the mapping grid has position relative for absolute positioning context */

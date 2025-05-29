@@ -5,6 +5,7 @@ import { getTagColor, calculateTagSize } from '@/utils/mappingDataUtils';
 
 interface Position {
   tagId: string;
+  instanceId?: string;
   x: number;
   y: number;
   annotation?: string;
@@ -61,23 +62,27 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
   // State to track which individual mapping is being hovered
   const [hoveredMapping, setHoveredMapping] = useState<string | null>(null);
   
-  // Function to get individual positions for a selected tag
-  const getIndividualPositions = (tagId: string) => {
-    return mappings
-      .filter(mapping => mapping.positions.some(pos => pos.tagId === tagId))
-      .map(mapping => {
-        const position = mapping.positions.find(pos => pos.tagId === tagId);
-        if (!position) return null;
-        
-        return {
-          userId: mapping.userId,
-          userName: mapping.userName,
-          x: position.x,
-          y: position.y,
-          annotation: position.annotation
-        };
-      })
-      .filter(Boolean); // Remove any nulls
+  // Function to get individual positions for a selected tag instance
+  const getIndividualPositions = (selectedKey: string) => {
+    const tagId = selectedKey; // Now selectedKey is just the tagId
+    
+    const allPositions: any[] = [];
+    
+    mappings.forEach(mapping => {
+      mapping.positions.forEach(pos => {
+        if (pos.tagId === tagId) {
+          allPositions.push({
+            userId: mapping.userId,
+            userName: mapping.userName,
+            x: pos.x,
+            y: pos.y,
+            annotation: pos.annotation
+          });
+        }
+      });
+    });
+    
+    return allPositions;
   };
   
   // Get individual positions if a tag is selected
@@ -107,27 +112,40 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           
           {/* Individual Tag Positions - only shown in aggregate view when a tag is selected */}
           {selectedTag && viewMode === 'aggregate' && individualPositions.map((pos, index) => {
-            const tagColor = getTagColor(selectedTag);
-            const isHovered = hoveredMapping === pos.userId;
+            // Use the same tagId as the main positioned tag for consistent coloring
+            const positionData = positions[selectedTag];
+            const tagColor = getTagColor(positionData?.tagId || selectedTag.split('_')[0]);
+            const positionKey = `${pos.userId}-${pos.x}-${pos.y}`; // Unique key for this specific position
+            const isHovered = hoveredMapping === positionKey;
             
             return (
               <div
                 key={`individual-${index}`}
                 className={`individual-tag-position ${isHovered ? 'hovered' : ''} ${
-                  hoveredComment?.tagId === selectedTag && hoveredComment?.userId === pos.userId ? 'hovered-comment' : ''
+                  hoveredComment?.tagId === selectedTag && hoveredComment?.userId === pos.userId && 
+                  hoveredComment?.x === pos.x && hoveredComment?.y === pos.y ? 'hovered-comment' : ''
                 }`}
                 style={{
                   left: `${pos.x * 100}%`,
                   top: `${(1 - pos.y) * 100}%`,
                   transform: 'translate(-50%, -50%)',
-                  backgroundColor: hoveredComment?.tagId === selectedTag && hoveredComment?.userId === pos.userId 
+                  backgroundColor: hoveredComment?.tagId === selectedTag && hoveredComment?.userId === pos.userId && 
+                    hoveredComment?.x === pos.x && hoveredComment?.y === pos.y
                     ? `${tagColor}70` // Brighter when it's the hovered comment
                     : `${tagColor}30`, // Normal lighter background
                   border: `2px solid ${tagColor}`,
-                  zIndex: hoveredComment?.tagId === selectedTag && hoveredComment?.userId === pos.userId ? 25 : (isHovered ? 15 : 10)
+                  zIndex: hoveredComment?.tagId === selectedTag && hoveredComment?.userId === pos.userId && 
+                    hoveredComment?.x === pos.x && hoveredComment?.y === pos.y ? 25 : (isHovered ? 15 : 10)
                 }}
-                onMouseEnter={() => setHoveredMapping(pos.userId)}
-                onMouseLeave={() => setHoveredMapping(null)}
+                onMouseEnter={() => {
+                  setHoveredMapping(positionKey);
+                  // Also set hovered comment to highlight corresponding comment
+                  onHoverTag?.(`${selectedTag}-${pos.userId}-${pos.x}-${pos.y}`);
+                }}
+                onMouseLeave={() => {
+                  setHoveredMapping(null);
+                  onHoverTag?.(null);
+                }}
                 title={`${pos.userName}'s mapping${pos.annotation ? `: ${pos.annotation}` : ''}`}
               >
                 {/* Show username on hover */}
@@ -141,11 +159,11 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           })}
           
           {/* Positioned Tags */}
-          {Object.entries(positions).map(([tagId, position]) => {
+          {Object.entries(positions).map(([key, position]) => {
             // Skip if a tag is selected and this isn't it
-            if (selectedTag && tagId !== selectedTag) return null;
+            if (selectedTag && key !== selectedTag) return null;
             
-            const tagColor = getTagColor(tagId);
+            const tagColor = getTagColor(position.tagId);
             
             // Calculate size based on consensus and count
             const count = position.count || 1;
@@ -160,28 +178,36 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
             
             return (
               <div
-                key={tagId}
-                className={`positioned-tag ${selectedTag === tagId ? 'selected' : ''} ${
-                  viewMode === 'individual' && hoveredComment?.tagId === tagId ? 'hovered-comment' : ''
+                key={key}
+                className={`positioned-tag ${selectedTag === key ? 'selected' : ''} ${
+                  viewMode === 'individual' && hoveredComment?.tagId === position.tagId && 
+                  hoveredComment?.x === position.x && hoveredComment?.y === position.y ? 'hovered-comment' : ''
                 }`}
                 style={{
                   left: `${position.x * 100}%`,
                   top: `${(1 - position.y) * 100}%`,
                   transform: 'translate(-50%, -50%)',
-                  border: selectedTag === tagId ? `2px dashed ${tagColor}` : `2px solid ${tagColor}`,
-                  backgroundColor: viewMode === 'individual' && hoveredComment?.tagId === tagId 
+                  border: selectedTag === key ? `2px dashed ${tagColor}` : `2px solid ${tagColor}`,
+                  backgroundColor: viewMode === 'individual' && hoveredComment?.tagId === position.tagId && 
+                    hoveredComment?.x === position.x && hoveredComment?.y === position.y
                     ? `${tagColor}70` // Brighter background when hovered in individual view
                     : `${tagColor}40`, // Normal background
                   width: `${size}rem`,
                   height: `${size}rem`,
                   minWidth: `${size}rem`,
                   minHeight: `${size}rem`,
-                  zIndex: viewMode === 'individual' && hoveredComment?.tagId === tagId ? 25 : (selectedTag === tagId ? 20 : 5)
+                  zIndex: viewMode === 'individual' && hoveredComment?.tagId === position.tagId && 
+                    hoveredComment?.x === position.x && hoveredComment?.y === position.y ? 25 : (selectedTag === key ? 20 : 5)
                 }}
-                onClick={() => onSelectTag(tagId)}
+                onClick={() => onSelectTag(key)}
                 onMouseEnter={() => {
-                  setHoveredMapping(tagId);
-                  onHoverTag?.(tagId);
+                  setHoveredMapping(key);
+                  // For individual view, pass position info to highlight corresponding comment
+                  if (viewMode === 'individual') {
+                    onHoverTag?.(`${position.tagId}-${position.x}-${position.y}`);
+                  } else {
+                    onHoverTag?.(key);
+                  }
                 }}
                 onMouseLeave={() => {
                   setHoveredMapping(null);
@@ -193,16 +219,16 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
                   className="tag-content"
                   style={{ fontSize: `${fontSize}rem` }}
                 >
-                  {position.count && position.count > 1 && (
-                    <div className="tag-count" style={{ backgroundColor: tagColor }}>{position.count}</div>
-                  )}
-                  {position.annotation && (
-                    <div className="tag-annotation-indicator" title={position.annotation}>i</div>
-                  )}
-                  {selectedTag === tagId && (
-                    <div className="aggregate-marker">Average</div>
-                  )}
                 </div>
+                {position.count && position.count > 1 && (
+                  <div className="tag-count" style={{ backgroundColor: tagColor }}>{position.count}</div>
+                )}
+                {position.annotation && (
+                  <div className="tag-annotation-indicator" title={position.annotation}>i</div>
+                )}
+                {selectedTag === key && (
+                  <div className="aggregate-marker">Average</div>
+                )}
               </div>
             );
           })}
@@ -211,11 +237,29 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
             <div 
               className="selected-tag-indicator"
               style={{ 
-                borderColor: getTagColor(selectedTag),
-                backgroundColor: `${getTagColor(selectedTag)}20` // 20 = 12.5% opacity
+                borderColor: (() => {
+                  const positionData = positions[selectedTag];
+                  return getTagColor(positionData?.tagId || selectedTag.split('_')[0]);
+                })(),
+                backgroundColor: `${(() => {
+                  const positionData = positions[selectedTag];
+                  return getTagColor(positionData?.tagId || selectedTag.split('_')[0]);
+                })()}20` // 20 = 12.5% opacity
               }}
             >
-              Selected: {tags.find(t => t.id === selectedTag)?.text || selectedTag}
+              Selected: {(() => {
+                const [tagId, instanceId] = selectedTag.includes('_') ? selectedTag.split('_') : [selectedTag, undefined];
+                
+                // Get the text from the positions data which has the correct text for instances
+                const positionData = positions[selectedTag];
+                if (positionData?.text) {
+                  return positionData.text;
+                }
+                
+                // Fallback to tags array for base tags
+                const tag = tags.find(t => t.id === tagId);
+                return tag?.text || tagId;
+              })()}
             </div>
           )}
         </div>

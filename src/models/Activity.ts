@@ -51,6 +51,7 @@ export interface Comment {
 
 export interface Position {
   tagId: string;
+  instanceId?: string; // For multiple instances of the same tag
   x: number;
   y: number;
   annotation?: string;
