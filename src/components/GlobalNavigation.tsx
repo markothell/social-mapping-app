@@ -70,7 +70,7 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
     <div className="global-navigation">
       <div className="nav-container">
         <div className="nav-brand">
-          <span className="brand-text">Social_Map.{activityTitle || 'activity'}</span>
+          <span className="brand-text">FORM.{activityTitle || 'activity'}</span>
           <span className="brand-subtitle">{getSubtitle()}</span>
         </div>
         

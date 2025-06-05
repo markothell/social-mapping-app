@@ -21,6 +21,14 @@ export const activityService = {
       ...activity,
       createdAt: new Date(activity.createdAt),
       updatedAt: new Date(activity.updatedAt),
+      // Provide defaults for backward compatibility with existing activities
+      ownerId: activity.ownerId || 'default-admin',
+      ownerName: activity.ownerName || 'Mo',
+      permissions: activity.permissions || {
+        isPublic: true,
+        allowGuestParticipants: true,
+        visibility: 'public'
+      },
       // Convert string dates in votes to Date objects
       tags: activity.tags?.map((tag: any) => ({
         ...tag,

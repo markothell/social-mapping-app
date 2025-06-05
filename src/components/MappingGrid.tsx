@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from 'react';
-import { getTagColor } from '@/utils/mappingDataUtils';
+import { getTagColor } from '@/utils/tagColorUtils';
 
 interface MappingSettings {
   xAxisLabel: string;

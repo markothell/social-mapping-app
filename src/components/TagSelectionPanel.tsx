@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { getTagColor } from '@/utils/mappingDataUtils';
+import { getTagColor } from '@/utils/tagColorUtils';
 
 interface Tag {
   id: string;

@@ -131,20 +131,6 @@ export default function MappingResultsPage({
             </p>
           </div>
           
-          <div className="completion-status">
-            <div className="completion-bar">
-              <div 
-                className="completion-progress" 
-                style={{ width: `${completionPercentage}%` }}
-              ></div>
-            </div>
-            <p className="completion-info">
-              {completedMappings.length} of {totalParticipants} participants completed ({completionPercentage}%)
-              {activity.status === 'completed' && (
-                <span className="completed-badge">Activity Completed</span>
-              )}
-            </p>
-          </div>
         </div>
         
         {hasEnoughData ? (
@@ -265,40 +251,6 @@ export default function MappingResultsPage({
           margin-right: auto;
         }
         
-        
-        .completion-status {
-          margin-bottom: 1.5rem;
-        }
-        
-        .completion-bar {
-          height: 8px;
-          background-color: #f1f3f4;
-          border-radius: 4px;
-          overflow: hidden;
-          margin-bottom: 0.5rem;
-        }
-        
-        .completion-progress {
-          height: 100%;
-          background-color: #34a853;
-          border-radius: 4px;
-          transition: width 0.3s ease;
-        }
-        
-        .completion-info {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 1rem;
-        }
-        
-        .completed-badge {
-          background-color: #34a853;
-          color: white;
-          font-size: 0.8rem;
-          padding: 0.25rem 0.75rem;
-          border-radius: 20px;
-        }
         
         .no-data-message {
           background-color: #f8f9fa;

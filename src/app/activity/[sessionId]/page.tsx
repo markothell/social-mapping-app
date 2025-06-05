@@ -67,7 +67,7 @@ export default function ActivityPage({
     setIsSwitchingUser(false);
   };
   
-  const handleSwitchUserJoin = (name: string) => {
+  const handleSwitchUserJoin = (name: string, existingParticipant?: any) => {
     // First leave the current user if exists
     if (user && activity) {
       console.log(`User ${user.name} (${user.id}) is leaving activity ${activity.id}`);
@@ -93,20 +93,54 @@ export default function ActivityPage({
     }
     
     // Then join with the new name
-    handleJoin(name);
+    handleJoin(name, existingParticipant);
   };
   
   // Handle joining the activity
-  const handleJoin = (name: string) => {
+  const handleJoin = (name: string, existingParticipant?: any) => {
     if (!activity) return;
     
-    // Create user data
-    const userData = {
-      id: `user_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`,
-      name: name
-    };
+    let userData;
     
-    // Save user data to localStorage
+    if (existingParticipant) {
+      // Use existing participant data
+      userData = {
+        id: existingParticipant.id,
+        name: existingParticipant.name
+      };
+      console.log(`Returning participant: ${userData.name} (${userData.id})`);
+    } else {
+      // Create new user data
+      userData = {
+        id: `user_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`,
+        name: name
+      };
+      console.log(`New participant: ${userData.name} (${userData.id})`);
+    }
+    
+    // Add user to history for future recognition
+    const userHistory = localStorage.getItem('userHistory');
+    let history = [];
+    if (userHistory) {
+      try {
+        history = JSON.parse(userHistory);
+      } catch (error) {
+        console.error('Error parsing user history:', error);
+        history = [];
+      }
+    }
+    
+    // Add current user to history if not already there
+    if (!history.some(u => u.id === userData.id)) {
+      history.push(userData);
+      // Keep only last 10 users to prevent localStorage bloat
+      if (history.length > 10) {
+        history = history.slice(-10);
+      }
+      localStorage.setItem('userHistory', JSON.stringify(history));
+    }
+    
+    // Save current user data to localStorage
     localStorage.setItem('user', JSON.stringify(userData));
     
     // Set user and reload the page
@@ -188,6 +222,7 @@ export default function ActivityPage({
         {!user || isSwitchingUser ? (
           <EntryForm 
             user={isSwitchingUser ? user : null} 
+            participants={participants}
             onJoin={isSwitchingUser ? handleSwitchUserJoin : handleJoin}
             onCancel={isSwitchingUser ? handleCancelSwitch : undefined}
             showCancel={isSwitchingUser}

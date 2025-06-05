@@ -10,7 +10,6 @@ import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
 import GlobalNavigation from '@/components/GlobalNavigation';
-import { getTagColor } from '@/utils/mappingDataUtils';
 
 function useParams<T>(params: T | Promise<T>): T {
   return params instanceof Promise ? use(params) : params;
@@ -508,6 +507,11 @@ export default function MappingPage({
                           }
                         };
                         setUserMappings(newUserMappings);
+                        
+                        // Deselect the current tag after updating context
+                        setSelectedTag(null);
+                        setSelectedInstanceId(null);
+                        setEditingContext('');
                       }
                     }}
                   >

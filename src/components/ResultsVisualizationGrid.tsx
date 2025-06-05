@@ -1,7 +1,8 @@
 "use client";
 
 import { memo, useState } from 'react';
-import { getTagColor, calculateTagSize } from '@/utils/mappingDataUtils';
+import { getTagColor } from '@/utils/tagColorUtils';
+import { calculateTagSize } from '@/utils/mappingDataUtils';
 
 interface Position {
   tagId: string;

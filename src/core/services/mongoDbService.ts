@@ -112,6 +112,35 @@ function structureSanitizeForMongoDB(data: any) {
     sanitized.status = 'active';
   }
   
+  // Ensure ownership fields exist with defaults for backward compatibility
+  if (!sanitized.ownerId) {
+    sanitized.ownerId = 'default-admin';
+  }
+  
+  if (!sanitized.ownerName) {
+    sanitized.ownerName = 'Mo';
+  }
+  
+  // Ensure permissions object exists with defaults
+  if (!sanitized.permissions) {
+    sanitized.permissions = {
+      isPublic: true,
+      allowGuestParticipants: true,
+      visibility: 'public'
+    };
+  } else {
+    // Ensure all permission fields have valid values
+    if (typeof sanitized.permissions.isPublic !== 'boolean') {
+      sanitized.permissions.isPublic = true;
+    }
+    if (typeof sanitized.permissions.allowGuestParticipants !== 'boolean') {
+      sanitized.permissions.allowGuestParticipants = true;
+    }
+    if (!sanitized.permissions.visibility || !['public', 'unlisted', 'private'].includes(sanitized.permissions.visibility)) {
+      sanitized.permissions.visibility = 'public';
+    }
+  }
+  
   return sanitized;
 }
 

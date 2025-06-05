@@ -124,6 +124,13 @@ export interface Activity {
   mappings: Mapping[];
   rankings: Ranking[];
   hostName?: string;
+  ownerId: string;
+  ownerName: string;
+  permissions: {
+    isPublic: boolean;
+    allowGuestParticipants: boolean;
+    visibility: 'public' | 'unlisted' | 'private';
+  };
 }
 
 export function createDefaultActivity(type: 'mapping' | 'ranking', title: string): Activity {
@@ -184,6 +191,13 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
     phase: 'gathering',
     tags: [],
     mappings: [],
-    rankings: []
+    rankings: [],
+    ownerId: 'default-admin',
+    ownerName: 'Mo',
+    permissions: {
+      isPublic: true,
+      allowGuestParticipants: true,
+      visibility: 'public'
+    }
   };
 }

@@ -4,46 +4,6 @@
  * Utility functions for processing and analyzing mapping data
  */
 
-// Color palette for tags - vibrant, distinguishable colors
-const TAG_COLORS = [
-  '#4285F4', // Google Blue
-  '#EA4335', // Google Red
-  '#FBBC05', // Google Yellow
-  '#34A853', // Google Green
-  '#8E24AA', // Purple
-  '#16A085', // Turquoise
-  '#D35400', // Orange
-  '#2980B9', // Deep Blue
-  '#C0392B', // Deep Red
-  '#27AE60', // Deep Green
-  '#F39C12', // Amber
-  '#7D3C98', // Deep Purple
-  '#2C3E50', // Navy
-  '#E74C3C', // Bright Red
-  '#1ABC9C', // Bright Green
-  '#3498DB', // Sky Blue
-  '#9B59B6', // Violet
-  '#E67E22', // Carrot Orange
-  '#F1C40F', // Sun Yellow
-  '#00BCD4', // Cyan
-];
-
-/**
- * Get a consistent color for a tag based on its ID
- */
-export function getTagColor(tagId: string): string {
-  // Use the tag ID to deterministically pick a color from our palette
-  // Hash the tag ID to a number and use modulo to get an index
-  let hash = 0;
-  for (let i = 0; i < tagId.length; i++) {
-    hash = (hash << 5) - hash + tagId.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
-  }
-  
-  // Ensure positive value with Math.abs
-  const colorIndex = Math.abs(hash) % TAG_COLORS.length;
-  return TAG_COLORS[colorIndex];
-}
 
 /**
  * Calculate the size of a tag circle based on variance

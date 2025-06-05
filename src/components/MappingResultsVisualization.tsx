@@ -489,27 +489,28 @@ export default function MappingResultsVisualization({
                     <div className="annotation-list">
                       {tagStats.annotations.map((annotation, idx) => {
                         return (
-                          <div 
-                            key={idx} 
-                            className={`annotation-item ${
-                              (hoveredTag === selectedTag) || 
-                              (hoveredComment?.tagId === selectedTag && hoveredComment?.userId === annotation.userId && 
-                               hoveredComment?.x === annotation.x && hoveredComment?.y === annotation.y) 
-                              ? 'tag-hovered' : ''
-                            }`}
-                            onClick={() => handleCommentClick(annotation.userId)}
-                            onMouseEnter={() => setHoveredComment({ 
-                              tagId: selectedTag, 
-                              userId: annotation.userId, 
-                              x: annotation.x, 
-                              y: annotation.y 
-                            })}
-                            onMouseLeave={() => setHoveredComment({ tagId: null, userId: null })}
-                          >
-                            <div className="annotation-content">{annotation.text}</div>
-                            <div className="annotation-author">
-                              — {annotation.userName}
-                              <span className="view-map-link"> (Click to view map)</span>
+                          <div key={idx} className="annotation-wrapper">
+                            <div className="annotation-author-above">
+                              {annotation.userName}
+                            </div>
+                            <div 
+                              className={`annotation-item ${
+                                (hoveredTag === selectedTag) || 
+                                (hoveredComment?.tagId === selectedTag && hoveredComment?.userId === annotation.userId && 
+                                 hoveredComment?.x === annotation.x && hoveredComment?.y === annotation.y) 
+                                ? 'tag-hovered' : ''
+                              }`}
+                              onClick={() => handleCommentClick(annotation.userId)}
+                              onMouseEnter={() => setHoveredComment({ 
+                                tagId: selectedTag, 
+                                userId: annotation.userId, 
+                                x: annotation.x, 
+                                y: annotation.y 
+                              })}
+                              onMouseLeave={() => setHoveredComment({ tagId: null, userId: null })}
+                              title="Click to view individual map"
+                            >
+                              <div className="annotation-content">{annotation.text}</div>
                             </div>
                           </div>
                         );
@@ -535,7 +536,7 @@ export default function MappingResultsVisualization({
                         {participantComments.map((comment, idx) => (
                           <div 
                             key={idx} 
-                            className={`annotation-item ${
+                            className={`annotation-item individual-comment ${
                               (hoveredTag === comment.tagId) ||
                               (hoveredComment?.tagId === comment.tagId && hoveredComment?.userId === selectedParticipant && 
                                hoveredComment?.x === comment.position.x && hoveredComment?.y === comment.position.y) 
@@ -550,7 +551,7 @@ export default function MappingResultsVisualization({
                             onMouseLeave={() => setHoveredComment({ tagId: null, userId: null })}
                           >
                             <div className="tag-title">{comment.tagText}</div>
-                            <div className="annotation-content">{comment.annotation}</div>
+                            <div className="annotation-content individual-view">{comment.annotation}</div>
                             <div className="position-coordinates">
                               Position: ({(comment.position.x * 10 - 5).toFixed(1)}, {(comment.position.y * 10 - 5).toFixed(1)})
                             </div>
@@ -738,14 +739,26 @@ export default function MappingResultsVisualization({
           margin-top: 0.75rem;
         }
         
+        .annotation-wrapper {
+          margin-bottom: 1rem;
+        }
+        
+        .annotation-author-above {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #5f6368;
+          margin-bottom: 0.25rem;
+          margin-left: 0.25rem;
+        }
+        
         .annotation-item {
           background-color: white;
-          border-radius: 6px;
+          border-radius: 12px;
           padding: 0.75rem;
-          margin-bottom: 0.75rem;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
           cursor: pointer;
           transition: background-color 0.2s;
+          margin-left: 0;
         }
         
         .annotation-item:hover {
@@ -759,20 +772,31 @@ export default function MappingResultsVisualization({
         .annotation-content {
           font-size: 0.9rem;
           color: #202124;
-          margin-bottom: 0.5rem;
           line-height: 1.4;
         }
         
-        .annotation-author {
-          font-size: 0.8rem;
-          color: #5f6368;
-          text-align: right;
-          font-style: italic;
+        .annotation-content.individual-view {
+          margin-left: 1rem;
         }
         
-        .view-map-link {
+        .annotation-item.individual-comment {
+          margin-bottom: 0.75rem;
+        }
+        
+        .tag-title {
+          font-weight: 600;
+          font-size: 0.9rem;
           color: #1a73e8;
-          text-decoration: underline;
+          margin-bottom: 0.25rem;
+          margin-left: 1rem;
+        }
+        
+        .position-coordinates {
+          font-size: 0.8rem;
+          color: #5f6368;
+          font-style: italic;
+          margin-top: 0.25rem;
+          margin-left: 1rem;
         }
         
         .no-annotations {
