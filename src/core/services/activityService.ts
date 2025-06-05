@@ -22,7 +22,7 @@ export const activityService = {
       createdAt: new Date(activity.createdAt),
       updatedAt: new Date(activity.updatedAt),
       // Provide defaults for backward compatibility with existing activities
-      ownerId: activity.ownerId || 'default-admin',
+      ownerId: activity.ownerId || 'teleodelic@gmail.com',
       ownerName: activity.ownerName || 'Mo',
       permissions: activity.permissions || {
         isPublic: true,

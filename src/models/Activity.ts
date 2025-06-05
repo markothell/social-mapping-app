@@ -192,7 +192,7 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
     tags: [],
     mappings: [],
     rankings: [],
-    ownerId: 'default-admin',
+    ownerId: 'teleodelic@gmail.com',
     ownerName: 'Mo',
     permissions: {
       isPublic: true,

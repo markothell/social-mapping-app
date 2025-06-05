@@ -45,7 +45,7 @@ async function migrateActivities() {
 
         // Add ownerId if missing
         if (!activity.ownerId) {
-          updateFields.ownerId = 'default-admin';
+          updateFields.ownerId = 'teleodelic@gmail.com';
         }
 
         // Add ownerName if missing
@@ -171,7 +171,7 @@ Environment Variables:
   MONGODB_URI                     MongoDB connection string (default: mongodb://localhost:27017/social-mapping)
 
 What this migration does:
-  • Adds 'ownerId' field with default value 'default-admin'
+  • Adds 'ownerId' field with default value 'teleodelic@gmail.com'
   • Adds 'ownerName' field with default value 'Mo'
   • Adds 'permissions' object with default public settings
   • Ensures backward compatibility with existing activities

@@ -114,7 +114,7 @@ function structureSanitizeForMongoDB(data: any) {
   
   // Ensure ownership fields exist with defaults for backward compatibility
   if (!sanitized.ownerId) {
-    sanitized.ownerId = 'default-admin';
+    sanitized.ownerId = 'teleodelic@gmail.com';
   }
   
   if (!sanitized.ownerName) {
