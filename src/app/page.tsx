@@ -12,10 +12,10 @@ export default function HomePage() {
     if (isAdminDomain()) {
       router.push('/admin');
     } else {
-      // If we're on the main domain, redirect to admin subdomain
-      window.location.href = getAdminUrl('/admin');
+      // If we're on the app domain, redirect to main domain
+      window.location.href = 'https://socialinsight.tools';
     }
   }, [router]);
   
-  return <div>Redirecting to admin dashboard...</div>;
+  return <div>Redirecting...</div>;
 }
