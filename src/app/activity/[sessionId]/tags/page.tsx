@@ -4,6 +4,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
+import { useNotifications } from '@/contexts/NotificationContext';
 import TagCreationForm from '@/components/TagCreationForm';
 import TagList from '@/components/TagList';
 import ActivityNotFound from '@/components/ActivityNotFound';
@@ -25,6 +26,7 @@ export default function TagsPage({
   
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { incrementNewTags, setApprovedTagsChanged } = useNotifications();
   
   // Use the real-time activity hook
   const {
@@ -81,6 +83,7 @@ export default function TagsPage({
     // Track tag addition
     addTag(newTag);
   };
+
 
   // Function to vote for a tag with real-time updates
   const handleVoteTag = (tagId: string) => {
@@ -161,6 +164,7 @@ export default function TagsPage({
         activityTitle={activity.settings.entryView?.title || 'activity'}
         hostName={activity.hostName}
         activity={activity}
+        currentUserId={user?.id}
       />
       <div className="tags-container">
         <div className="tags-header">

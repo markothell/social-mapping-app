@@ -429,6 +429,7 @@ export default function MappingPage({
         onNavigate={navigateWithUnsavedCheck}
         hostName={activity.hostName}
         activity={activity}
+        currentUserId={user?.id}
       />
       <div className="mapping-container">
         <div className="mapping-header">

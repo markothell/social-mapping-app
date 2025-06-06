@@ -12,6 +12,7 @@ export default function ActivityLayout({
   children: React.ReactNode;
 }) {
   const [userName, setUserName] = useState('Guest');
+  const [userId, setUserId] = useState<string | undefined>();
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [activityTitle, setActivityTitle] = useState<string>('activity');
   const [hostName, setHostName] = useState<string | undefined>();
@@ -48,8 +49,10 @@ export default function ActivityLayout({
         if (storedUser) {
           const user = JSON.parse(storedUser);
           setUserName(user.name || 'User');
+          setUserId(user.id);
         } else {
           setUserName('Guest');
+          setUserId(undefined);
         }
       } catch (e) {
         console.error('Error getting user from localStorage:', e);
@@ -88,7 +91,7 @@ export default function ActivityLayout({
       <main className="app-content">
         <div className="content-wrapper">
           {/* Only show navigation if not on mapping or tags page - these pages handle their own navigation */}
-          {!pathname.includes('/mapping') && !pathname.includes('/tags') && !pathname.includes('/mapping-results') && <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} hostName={hostName} activity={activity} />}
+          {!pathname.includes('/mapping') && !pathname.includes('/tags') && !pathname.includes('/mapping-results') && <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} hostName={hostName} activity={activity} currentUserId={userId} />}
           {children}
         </div>
       </main>

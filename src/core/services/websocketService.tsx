@@ -246,25 +246,26 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           }
           
           // Check if tag already exists locally
-          if (currentActivity.tags.some(t => t.id === data.tag.id)) {
-            console.log(`Tag ${data.tag.id} already exists locally in activity ${data.activityId}, skipping`);
-            return;
+          const tagExists = currentActivity.tags.some(t => t.id === data.tag.id);
+          
+          // Add tag directly to local activity (only if it doesn't exist)
+          if (!tagExists) {
+            await hybridActivityService.update(data.activityId, (activity) => {
+              // Ensure we don't add the tag if it somehow got added
+              if (!activity.tags.some(t => t.id === data.tag.id)) {
+                activity.tags.push(data.tag);
+              }
+              return activity;
+            });
           }
           
-          // Add tag directly to local activity
-          await hybridActivityService.update(data.activityId, (activity) => {
-            // Ensure we don't add the tag if it somehow got added
-            if (!activity.tags.some(t => t.id === data.tag.id)) {
-              activity.tags.push(data.tag);
-            }
-            return activity;
-          });
-          
-          // Trigger UI update with custom event
+          // Always trigger UI update with custom event for notifications
           window.dispatchEvent(new CustomEvent('tag_added', { 
             detail: { 
               activityId: data.activityId, 
-              tagId: data.tag.id 
+              tagId: data.tag.id,
+              creatorId: data.tag.creatorId,
+              creatorName: data.tag.creatorName
             } 
           }));
         } catch (error) {

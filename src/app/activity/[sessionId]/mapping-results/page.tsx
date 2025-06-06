@@ -3,7 +3,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { activityService } from '@/core/services/activityService';
+import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import MappingResultsVisualization from '@/components/MappingResultsVisualization';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
@@ -26,49 +26,35 @@ export default function MappingResultsPage({
   const unwrappedParams = useParams(params);
   const sessionId = unwrappedParams.sessionId;
   
-  const [activity, setActivity] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState({
-    isConnected: true,
-    error: null
-  });
 
+  // Use the real-time activity hook
+  const {
+    activity,
+    loading,
+    isConnected,
+    connectionError
+  } = useRealTimeActivity(sessionId, user);
+
+  // Load user data from localStorage
   useEffect(() => {
-    // Load activity data
-    const loadActivity = () => {
-      const activityData = activityService.getById(sessionId);
-      if (activityData) {
-        setActivity(activityData);
-        setLoading(false);
-      } else {
-        setLoading(false);
-      }
-    };
-
-    // Load user data from localStorage
-    const loadUser = () => {
-      if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            setIsAdmin(parsedUser.id === 'admin' || localStorage.getItem('isAdmin') === 'true');
-          } catch (error) {
-            console.error('Error parsing user data:', error);
-            router.push(`/activity/${sessionId}`);
-          }
-        } else {
-          // Redirect back to entry if no user
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setIsAdmin(parsedUser.id === 'admin' || localStorage.getItem('isAdmin') === 'true');
+        } catch (error) {
+          console.error('Error parsing user data:', error);
           router.push(`/activity/${sessionId}`);
         }
+      } else {
+        // Redirect back to entry if no user
+        router.push(`/activity/${sessionId}`);
       }
-    };
-
-    loadActivity();
-    loadUser();
+    }
   }, [sessionId, router]);
 
   // Handle completion of the activity (admin only)
@@ -120,6 +106,7 @@ export default function MappingResultsPage({
         activityTitle={activity.settings.entryView?.title || 'activity'}
         hostName={activity.hostName}
         activity={activity}
+        currentUserId={user?.id}
       />
       <div className="results-container">
         <div className="results-header">
@@ -159,7 +146,12 @@ export default function MappingResultsPage({
           </div>
         )}
 
-        <ConnectionStatus status={connectionStatus} />
+        <ConnectionStatus 
+          status={{ 
+            isConnected: isConnected, 
+            error: connectionError 
+          }} 
+        />
 
         {isAdmin && (
           <div className="admin-controls">

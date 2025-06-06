@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface NavigationStep {
   id: string;
@@ -16,12 +17,15 @@ interface GlobalNavigationProps {
   onNavigate?: (path: string) => void;
   hostName?: string;
   activity?: any;
+  currentUserId?: string;
 }
 
-export default function GlobalNavigation({ sessionId, activityTitle, onNavigate, hostName, activity }: GlobalNavigationProps) {
+export default function GlobalNavigation({ sessionId, activityTitle, onNavigate, hostName, activity, currentUserId }: GlobalNavigationProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [currentStep, setCurrentStep] = useState(0);
+  
+  const { notifications, markNewTagsSeen, markApprovedTagsSeen, getNewTagsCountForUser } = useNotifications();
 
   const getSubtitle = () => {
     if (pathname.includes('/mapping-results')) {
@@ -49,6 +53,8 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
       setCurrentStep(3);
     } else if (pathname.includes('/mapping')) {
       setCurrentStep(2);
+      // Clear approved tags notification when visiting mapping page
+      markApprovedTagsSeen();
     } else if (pathname.includes('/tags')) {
       setCurrentStep(1);
     } else {
@@ -58,6 +64,13 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
 
   const handleStepClick = (stepIndex: number, step: NavigationStep) => {
     if (step.path) {
+      // Clear notifications when navigating to relevant pages
+      if (step.id === 'nominate') {
+        markNewTagsSeen();
+      } else if (step.id === 'map') {
+        markApprovedTagsSeen();
+      }
+      
       if (onNavigate) {
         onNavigate(step.path);
       } else {
@@ -83,6 +96,12 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
                 disabled={!step.path}
               >
                 <span className="step-icon">{step.icon}</span>
+                {step.id === 'nominate' && currentUserId && getNewTagsCountForUser(currentUserId) > 0 && (
+                  <span className="notification-badge">{getNewTagsCountForUser(currentUserId)}</span>
+                )}
+                {step.id === 'map' && notifications.approvedTagsChanged && (
+                  <span className="notification-dot"></span>
+                )}
               </button>
               <span className="step-label">{step.label}</span>
               {index < steps.length - 1 && (
@@ -172,6 +191,36 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
 
         .step-icon {
           font-size: 1.2rem;
+        }
+
+        .notification-badge {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: #dc3545;
+          color: white;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          font-size: 0.7rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          border: 2px solid white;
+          z-index: 3;
+        }
+
+        .notification-dot {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          background: #dc3545;
+          border-radius: 50%;
+          width: 12px;
+          height: 12px;
+          border: 2px solid white;
+          z-index: 3;
         }
 
         .step-label {

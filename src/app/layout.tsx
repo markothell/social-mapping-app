@@ -2,6 +2,7 @@
 import { WebSocketProvider } from '@/core/services/websocketService';
 import { SyncInitializer } from '@/components/SyncInitializer';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { Metadata } from 'next';
 import './globals.css';
 
@@ -18,11 +19,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <WebSocketProvider>
-          {children}
-          <SyncInitializer />
-          <OfflineIndicator />
-        </WebSocketProvider>
+        <NotificationProvider>
+          <WebSocketProvider>
+            {children}
+            <SyncInitializer />
+            <OfflineIndicator />
+          </WebSocketProvider>
+        </NotificationProvider>
       </body>
     </html>
   );
