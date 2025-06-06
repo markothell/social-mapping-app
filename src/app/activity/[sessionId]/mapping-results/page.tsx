@@ -7,7 +7,6 @@ import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import MappingResultsVisualization from '@/components/MappingResultsVisualization';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
-import GlobalNavigation from '@/components/GlobalNavigation';
 import { formatMappingsAsCSV, formatMappingsAsJSON } from '@/utils/mappingDataUtils';
 
 // Helper function for consistent params handling across the app
@@ -101,13 +100,6 @@ export default function MappingResultsPage({
 
   return (
     <div className="mapping-results-page">
-      <GlobalNavigation 
-        sessionId={sessionId} 
-        activityTitle={activity.settings.entryView?.title || 'activity'}
-        hostName={activity.hostName}
-        activity={activity}
-        currentUserId={user?.id}
-      />
       <div className="results-container">
         <div className="results-header">
           <h1 className="core-question">Results</h1>

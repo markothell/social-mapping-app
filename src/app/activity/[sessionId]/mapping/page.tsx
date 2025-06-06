@@ -9,7 +9,6 @@ import TagSelectionPanel from '@/components/TagSelectionPanel';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
-import GlobalNavigation from '@/components/GlobalNavigation';
 
 function useParams<T>(params: T | Promise<T>): T {
   return params instanceof Promise ? use(params) : params;
@@ -423,14 +422,6 @@ export default function MappingPage({
 
   return (
     <div className="mapping-page">
-      <GlobalNavigation 
-        sessionId={sessionId} 
-        activityTitle={activity.settings.entryView?.title || 'activity'}
-        onNavigate={navigateWithUnsavedCheck}
-        hostName={activity.hostName}
-        activity={activity}
-        currentUserId={user?.id}
-      />
       <div className="mapping-container">
         <div className="mapping-header">
           <h1 className="core-question">{activity.settings.mapping?.coreQuestion || 'Position each tag on the grid'}</h1>

@@ -53,8 +53,7 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
       setCurrentStep(3);
     } else if (pathname.includes('/mapping')) {
       setCurrentStep(2);
-      // Clear approved tags notification when visiting mapping page
-      markApprovedTagsSeen();
+      // Don't auto-clear notifications here - only clear when user clicks navigation
     } else if (pathname.includes('/tags')) {
       setCurrentStep(1);
     } else {

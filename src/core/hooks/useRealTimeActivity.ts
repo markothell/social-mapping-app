@@ -77,13 +77,25 @@ export function useRealTimeActivity(activityId: string, user: any) {
   
   // Set up real-time connection and event listeners
   useEffect(() => {
-    if (!user || !activityId) return;
+    console.log(`useRealTimeActivity effect - user: ${user?.id}, activityId: ${activityId}, isConnected: ${isConnected}, hasJoined: ${hasJoinedRef.current}`);
     
-    // Join the activity only if we haven't joined it already
-    if (!hasJoinedRef.current && isConnected) {
-      console.log(`Joining activity ${activityId} for user ${user.id}`);
-      joinActivity(activityId, user);
-      hasJoinedRef.current = true;
+    if (!user || !activityId) {
+      console.log(`Skipping join - missing user (${!!user}) or activityId (${!!activityId})`);
+      return;
+    }
+    
+    // Join the activity when connected (allow re-joining if connection was lost)
+    if (isConnected) {
+      if (!hasJoinedRef.current) {
+        console.log(`Joining activity ${activityId} for user ${user.id} (first time)`);
+        joinActivity(activityId, user);
+        hasJoinedRef.current = true;
+      } else {
+        console.log(`Re-joining activity ${activityId} for user ${user.id} (reconnection)`);
+        joinActivity(activityId, user);
+      }
+    } else {
+      console.log(`Not joining - isConnected: ${isConnected}, will join when connected`);
     }
     
     // Event listeners for real-time updates
@@ -231,18 +243,27 @@ export function useRealTimeActivity(activityId: string, user: any) {
       window.removeEventListener('phase_changed', handlePhaseChanged as EventListener);
       
       // Only leave the activity when the component unmounts or activityId changes
+      // Don't leave if we're just navigating within the same activity
       if (hasJoinedRef.current && currentActivityRef.current) {
-        console.log(`Cleanup: Leaving activity ${currentActivityRef.current} for user`, currentUserRef.current?.id);
-        hasJoinedRef.current = false;
+        console.log(`Cleanup: Preparing to leave activity ${currentActivityRef.current} for user`, currentUserRef.current?.id);
         
-        try {
-          leaveActivity(false);
-        } catch (error) {
-          console.error('Error during leaveActivity in cleanup:', error);
+        // Check if we're changing activities (not just navigating within the same activity)
+        const isChangingActivities = activityId !== currentActivityRef.current;
+        
+        if (isChangingActivities) {
+          console.log(`Actually leaving activity ${currentActivityRef.current} - changing to ${activityId}`);
+          hasJoinedRef.current = false;
+          try {
+            leaveActivity(false);
+          } catch (error) {
+            console.error('Error during leaveActivity in cleanup:', error);
+          }
+        } else {
+          console.log(`Not leaving activity ${currentActivityRef.current} - just navigating within same activity`);
         }
       }
     };
-  }, [activityId, user?.id, isConnected]); // Simplified dependencies
+  }, [activityId, user?.id, isConnected]); // Include isConnected so we join when connected
   
   // Handler function for adding a tag
   const addTag = useCallback(async (tag: any) => {
@@ -266,10 +287,13 @@ export function useRealTimeActivity(activityId: string, user: any) {
       
       // Then emit to other clients if online
       if (isConnected && !offline) {
+        console.log('Sending add_tag WebSocket message for tag:', tagWithId.id);
         sendMessage('add_tag', {
           activityId,
           tag: tagWithId
         });
+      } else {
+        console.log('Not sending add_tag - isConnected:', isConnected, 'offline:', offline);
       }
       
       return updatedActivity;

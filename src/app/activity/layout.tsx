@@ -90,8 +90,8 @@ export default function ActivityLayout({
       
       <main className="app-content">
         <div className="content-wrapper">
-          {/* Only show navigation if not on mapping or tags page - these pages handle their own navigation */}
-          {!pathname.includes('/mapping') && !pathname.includes('/tags') && !pathname.includes('/mapping-results') && <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} hostName={hostName} activity={activity} currentUserId={userId} />}
+          {/* Always show navigation at the activity level to prevent unmounting/remounting */}
+          <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} hostName={hostName} activity={activity} currentUserId={userId} />
           {children}
         </div>
       </main>

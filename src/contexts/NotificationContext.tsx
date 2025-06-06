@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 interface NotificationState {
   newTagsCount: number;
@@ -20,39 +20,78 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<NotificationState>({
-    newTagsCount: 0,
-    approvedTagsChanged: false,
-    newTagCreators: new Set<string>(),
+  const [notifications, setNotifications] = useState<NotificationState>(() => {
+    // Initialize from localStorage if available
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('notifications');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            newTagsCount: parsed.newTagsCount || 0,
+            approvedTagsChanged: parsed.approvedTagsChanged || false,
+            newTagCreators: new Set(parsed.newTagCreators || []),
+          };
+        }
+      } catch (error) {
+        console.error('Error loading notifications from localStorage:', error);
+      }
+    }
+    return {
+      newTagsCount: 0,
+      approvedTagsChanged: false,
+      newTagCreators: new Set<string>(),
+    };
   });
 
-  const markNewTagsSeen = () => {
+  // Persist notifications to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const toStore = {
+          newTagsCount: notifications.newTagsCount,
+          approvedTagsChanged: notifications.approvedTagsChanged,
+          newTagCreators: Array.from(notifications.newTagCreators),
+        };
+        console.log('NotificationContext: Saving to localStorage:', toStore);
+        localStorage.setItem('notifications', JSON.stringify(toStore));
+      } catch (error) {
+        console.error('Error saving notifications to localStorage:', error);
+      }
+    }
+  }, [notifications]);
+
+  const markNewTagsSeen = useCallback(() => {
+    console.log('NotificationContext: markNewTagsSeen called from:', new Error().stack);
     setNotifications(prev => ({ 
       ...prev, 
       newTagsCount: 0,
       newTagCreators: new Set<string>()
     }));
-  };
+  }, []);
 
-  const markApprovedTagsSeen = () => {
+  const markApprovedTagsSeen = useCallback(() => {
     setNotifications(prev => ({ ...prev, approvedTagsChanged: false }));
-  };
+  }, []);
 
-  const incrementNewTags = (creatorId: string) => {
+  const incrementNewTags = useCallback((creatorId: string) => {
+    console.log('NotificationContext: incrementNewTags called for creator:', creatorId);
     setNotifications(prev => {
       const newCreators = new Set(prev.newTagCreators);
       newCreators.add(creatorId);
-      return { 
+      const newState = { 
         ...prev, 
         newTagsCount: prev.newTagsCount + 1,
         newTagCreators: newCreators
       };
+      console.log('NotificationContext: New state after increment:', newState);
+      return newState;
     });
-  };
+  }, []);
 
-  const setApprovedTagsChanged = () => {
+  const setApprovedTagsChanged = useCallback(() => {
     setNotifications(prev => ({ ...prev, approvedTagsChanged: true }));
-  };
+  }, []);
 
   const getNewTagsCountForUser = (currentUserId: string) => {
     // Count tags not created by the current user
@@ -87,6 +126,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Trigger approved tags changed notification since voting might have changed approval status
       setApprovedTagsChanged();
     };
+
+    // Remove any existing listeners first to prevent duplicates
+    window.removeEventListener('tag_added', handleTagAdded as EventListener);
+    window.removeEventListener('tag_voted', handleTagVoted as EventListener);
 
     // Listen for custom events
     window.addEventListener('tag_added', handleTagAdded as EventListener);

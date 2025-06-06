@@ -130,8 +130,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   // Function to send a message
   const sendMessage = (event: string, data: any) => {
     if (!offline && isConnected && socketRef.current) {
+      console.log(`Sending WebSocket message: ${event}`, data);
       socketRef.current.emit(event, data);
     } else {
+      console.log(`Cannot send ${event} - offline: ${offline}, isConnected: ${isConnected}, socket: ${!!socketRef.current}`);
       console.log(`Queueing message for later: ${event}`);
       
       // Queue message for when we reconnect
@@ -571,10 +573,17 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const joinActivity = (activityId: string, user: any) => {
     if (!user) return;
     
+    // Don't rejoin if already in the same activity as the same user
+    if (currentActivity === activityId && currentUser?.id === user.id) {
+      console.log(`Already in activity ${activityId} as user ${user.id}, skipping join`);
+      return;
+    }
+    
     setCurrentActivity(activityId);
     setCurrentUser(user);
     
     if (!offline && isConnected && socketRef.current) {
+      console.log(`Joining WebSocket room for activity ${activityId} as user ${user.id}`);
       socketRef.current.emit('join_activity', { 
         activityId, 
         userId: user.id,

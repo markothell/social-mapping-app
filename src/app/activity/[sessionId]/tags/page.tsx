@@ -9,7 +9,6 @@ import TagCreationForm from '@/components/TagCreationForm';
 import TagList from '@/components/TagList';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ConnectionStatus from '@/components/ConnectionStatus';
-import GlobalNavigation from '@/components/GlobalNavigation';
 
 function useParams<T>(params: T | Promise<T>): T {
   return params instanceof Promise ? use(params) : params;
@@ -159,13 +158,6 @@ export default function TagsPage({
 
   return (
     <div className="tags-page">
-      <GlobalNavigation 
-        sessionId={sessionId} 
-        activityTitle={activity.settings.entryView?.title || 'activity'}
-        hostName={activity.hostName}
-        activity={activity}
-        currentUserId={user?.id}
-      />
       <div className="tags-container">
         <div className="tags-header">
           <h1 className="core-question">{activity.settings.tagCreation?.coreQuestion || 'What topics should we explore?'}</h1>
