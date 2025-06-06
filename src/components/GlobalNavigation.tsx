@@ -96,7 +96,7 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
               >
                 <span className="step-icon">{step.icon}</span>
                 {step.id === 'nominate' && currentUserId && getNewTagsCountForUser(currentUserId) > 0 && (
-                  <span className="notification-badge">{getNewTagsCountForUser(currentUserId)}</span>
+                  <span className="notification-dot"></span>
                 )}
                 {step.id === 'map' && notifications.approvedTagsChanged && (
                   <span className="notification-dot"></span>
