@@ -43,7 +43,6 @@ export function useRealTimeActivity(activityId: string, user: any) {
   // Load initial activity data
   useEffect(() => {
     if (!activityId) {
-      console.warn('No activityId provided to useRealTimeActivity');
       setLoading(false);
       setError('Activity ID is required');
       return;
@@ -54,18 +53,15 @@ export function useRealTimeActivity(activityId: string, user: any) {
       setError(null);
       
       try {
-        console.log(`Loading activity data for ${activityId}`);
         const activityData = await hybridActivityService.getById(activityId);
         
         if (activityData) {
           setActivity(activityData);
           setParticipants(activityData.participants || []);
         } else {
-          console.warn(`Activity ${activityId} not found`);
           setError('Activity not found');
         }
       } catch (error) {
-        console.error(`Error loading activity ${activityId}:`, error);
         setError('Failed to load activity');
       } finally {
         setLoading(false);
@@ -77,25 +73,16 @@ export function useRealTimeActivity(activityId: string, user: any) {
   
   // Set up real-time connection and event listeners
   useEffect(() => {
-    console.log(`useRealTimeActivity effect - user: ${user?.id}, activityId: ${activityId}, isConnected: ${isConnected}, hasJoined: ${hasJoinedRef.current}`);
-    
-    if (!user || !activityId) {
-      console.log(`Skipping join - missing user (${!!user}) or activityId (${!!activityId})`);
-      return;
-    }
+    if (!user || !activityId) return;
     
     // Join the activity when connected (allow re-joining if connection was lost)
     if (isConnected) {
       if (!hasJoinedRef.current) {
-        console.log(`Joining activity ${activityId} for user ${user.id} (first time)`);
         joinActivity(activityId, user);
         hasJoinedRef.current = true;
       } else {
-        console.log(`Re-joining activity ${activityId} for user ${user.id} (reconnection)`);
         joinActivity(activityId, user);
       }
-    } else {
-      console.log(`Not joining - isConnected: ${isConnected}, will join when connected`);
     }
     
     // Event listeners for real-time updates
@@ -127,7 +114,6 @@ export function useRealTimeActivity(activityId: string, user: any) {
     const handleRefreshParticipants = (event: CustomEvent) => {
       const detail = event.detail;
       if (detail.activityId === currentActivityRef.current) {
-        console.log(`Manual refresh of participants for activity ${currentActivityRef.current}`);
         hybridActivityService.getById(currentActivityRef.current).then(activity => {
           if (activity) {
             setParticipants(activity.participants || []);
@@ -139,11 +125,8 @@ export function useRealTimeActivity(activityId: string, user: any) {
     const handleTagAdded = (event: CustomEvent) => {
       const detail = event.detail;
       if (detail.activityId === currentActivityRef.current) {
-        console.log(`Received tag_added event for activity ${currentActivityRef.current}, tag ${detail.tagId}`);
-        
         // Check if we already have this tag before refreshing
         if (activity && activity.tags.some(tag => tag.id === detail.tagId)) {
-          console.log(`Tag ${detail.tagId} already exists locally, skipping refresh`);
           return;
         }
         
@@ -153,7 +136,6 @@ export function useRealTimeActivity(activityId: string, user: any) {
             // Before updating state, check for duplicates
             const uniqueTags = [...new Map(updatedActivity.tags.map(tag => [tag.id, tag])).values()];
             if (uniqueTags.length !== updatedActivity.tags.length) {
-              console.warn(`Duplicate tags detected in activity ${currentActivityRef.current}, removing duplicates`);
               updatedActivity.tags = uniqueTags;
             }
             
@@ -215,7 +197,6 @@ export function useRealTimeActivity(activityId: string, user: any) {
     const handleConnectionChange = () => {
       // Only rejoin if we were previously joined and now connected
       if (hasJoinedRef.current && isConnected && currentUserRef.current && currentActivityRef.current) {
-        console.log(`Reconnected - rejoining activity ${currentActivityRef.current}`);
         joinActivity(currentActivityRef.current, currentUserRef.current);
       }
     };
@@ -245,21 +226,16 @@ export function useRealTimeActivity(activityId: string, user: any) {
       // Only leave the activity when the component unmounts or activityId changes
       // Don't leave if we're just navigating within the same activity
       if (hasJoinedRef.current && currentActivityRef.current) {
-        console.log(`Cleanup: Preparing to leave activity ${currentActivityRef.current} for user`, currentUserRef.current?.id);
-        
         // Check if we're changing activities (not just navigating within the same activity)
         const isChangingActivities = activityId !== currentActivityRef.current;
         
         if (isChangingActivities) {
-          console.log(`Actually leaving activity ${currentActivityRef.current} - changing to ${activityId}`);
           hasJoinedRef.current = false;
           try {
             leaveActivity(false);
           } catch (error) {
             console.error('Error during leaveActivity in cleanup:', error);
           }
-        } else {
-          console.log(`Not leaving activity ${currentActivityRef.current} - just navigating within same activity`);
         }
       }
     };
@@ -287,13 +263,10 @@ export function useRealTimeActivity(activityId: string, user: any) {
       
       // Then emit to other clients if online
       if (isConnected && !offline) {
-        console.log('Sending add_tag WebSocket message for tag:', tagWithId.id);
         sendMessage('add_tag', {
           activityId,
           tag: tagWithId
         });
-      } else {
-        console.log('Not sending add_tag - isConnected:', isConnected, 'offline:', offline);
       }
       
       return updatedActivity;
@@ -345,7 +318,6 @@ export function useRealTimeActivity(activityId: string, user: any) {
   // Handler function for deleting a tag
   const deleteTag = useCallback(async (tagId: string) => {
     if (!activity) {
-      console.error('Cannot delete tag: No active activity');
       return null;
     }
     
@@ -353,11 +325,8 @@ export function useRealTimeActivity(activityId: string, user: any) {
       // Ensure the tag exists in the activity
       const tagExists = activity.tags.some(tag => tag.id === tagId);
       if (!tagExists) {
-        console.warn(`Tag ${tagId} not found in activity ${activityId}`);
         return null;
       }
-      
-      console.log(`Deleting tag ${tagId} from activity ${activityId}`);
       
       // First update locally/in database
       const updatedActivity = await hybridActivityService.deleteTag(
@@ -379,11 +348,9 @@ export function useRealTimeActivity(activityId: string, user: any) {
         
         return updatedActivity;
       } else {
-        console.error(`Failed to delete tag ${tagId} - hybridActivityService.deleteTag returned null`);
         return null;
       }
     } catch (error) {
-      console.error(`Error deleting tag ${tagId}:`, error);
       return null;
     }
   }, [activity, activityId, isConnected, offline, sendMessage]);
@@ -474,7 +441,7 @@ export function useRealTimeActivity(activityId: string, user: any) {
         setParticipants(refreshedActivity.participants || []);
       }
     } catch (error) {
-      console.error('Error refreshing activity:', error);
+      // Silent error handling
     }
   }, [activityId]);
   

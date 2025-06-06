@@ -53,7 +53,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           approvedTagsChanged: notifications.approvedTagsChanged,
           newTagCreators: Array.from(notifications.newTagCreators),
         };
-        console.log('NotificationContext: Saving to localStorage:', toStore);
         localStorage.setItem('notifications', JSON.stringify(toStore));
       } catch (error) {
         console.error('Error saving notifications to localStorage:', error);
@@ -62,7 +61,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [notifications]);
 
   const markNewTagsSeen = useCallback(() => {
-    console.log('NotificationContext: markNewTagsSeen called from:', new Error().stack);
     setNotifications(prev => ({ 
       ...prev, 
       newTagsCount: 0,
@@ -75,17 +73,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const incrementNewTags = useCallback((creatorId: string) => {
-    console.log('NotificationContext: incrementNewTags called for creator:', creatorId);
     setNotifications(prev => {
       const newCreators = new Set(prev.newTagCreators);
       newCreators.add(creatorId);
-      const newState = { 
+      return { 
         ...prev, 
         newTagsCount: prev.newTagsCount + 1,
         newTagCreators: newCreators
       };
-      console.log('NotificationContext: New state after increment:', newState);
-      return newState;
     });
   }, []);
 

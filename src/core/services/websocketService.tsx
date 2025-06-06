@@ -98,8 +98,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(leaveActivityTimeout);
     }
     
-    console.log(`Leaving activity ${currentActivity}`);
-    
     // Debounce the leave operation
     leaveActivityTimeout = setTimeout(() => {
       if (socketRef.current && socketRef.current.connected) {
@@ -109,12 +107,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             userId: currentUser.id,
             userName: currentUser.name
           });
-          console.log(`Sent leave_activity event for user ${currentUser.id} in activity ${currentActivity}`);
         } catch (error) {
           console.error('Error sending leave_activity event:', error);
         }
-      } else {
-        console.log('Cannot send leave_activity: Socket not connected');
       }
       
       // Only update state if explicitly requested
@@ -130,12 +125,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   // Function to send a message
   const sendMessage = (event: string, data: any) => {
     if (!offline && isConnected && socketRef.current) {
-      console.log(`Sending WebSocket message: ${event}`, data);
       socketRef.current.emit(event, data);
     } else {
-      console.log(`Cannot send ${event} - offline: ${offline}, isConnected: ${isConnected}, socket: ${!!socketRef.current}`);
-      console.log(`Queueing message for later: ${event}`);
-      
       // Queue message for when we reconnect
       setQueuedMessages(prev => [
         ...prev,
@@ -149,8 +140,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     // Only create socket if it doesn't exist
     if (!socketRef.current && !globalSocketInstance) {
       const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001';
-      console.log(`Initializing WebSocket connection to ${WEBSOCKET_URL}`);
-      
       const socketInstance = io(WEBSOCKET_URL, {
         autoConnect: true,
         reconnection: true,
@@ -166,7 +155,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       
       // Connection event handlers
       socketInstance.on('connect', () => {
-        console.log('WebSocket connected');
         setIsConnected(true);
         setOffline(false);
         setError(null);
@@ -183,8 +171,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         
         // Send any queued messages
         if (queuedMessages.length > 0) {
-          console.log(`Sending ${queuedMessages.length} queued messages`);
-          
           queuedMessages.forEach(msg => {
             socketInstance.emit(msg.event, msg.data);
           });
@@ -194,15 +180,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       });
 
       socketInstance.on('reconnect', () => {
-        console.log('WebSocket re-connected');
         setOffline(false);
         setError(null);
       });
 
       // Activity-specific event handlers
       socketInstance.on('activity_updated', async (data) => {
-        console.log(`Received activity_updated for ${data.activityId}`);
-        
         try {
           // Before fetching, get current tags to check for duplications later
           const currentActivity = await hybridActivityService.getById(data.activityId);
@@ -216,7 +199,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             const uniqueTagIds = [...new Set(tagIds)];
             
             if (tagIds.length !== uniqueTagIds.length) {
-              console.warn(`Found duplicate tags in activity ${data.activityId}, fixing`);
               // Fix duplicates by keeping only one copy of each tag
               updatedActivity.tags = updatedActivity.tags.filter((tag, index) => {
                 return tagIds.indexOf(tag.id) === index;
@@ -238,12 +220,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       
       socketInstance.on('tag_added', async (data) => {
         try {
-          console.log(`Received tag_added for activity ${data.activityId}, tag ${data.tag.id}`);
-          
           // Skip fetching from MongoDB - directly add the tag to local state
           const currentActivity = await hybridActivityService.getById(data.activityId);
           if (!currentActivity) {
-            console.warn(`Activity ${data.activityId} not found locally`);
             return;
           }
           
@@ -359,8 +338,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const activity = await hybridActivityService.getById(data.activityId);
           if (!activity) return;
           
-          console.log(`Received participants_updated for activity ${data.activityId} with ${data.participants.length} participants`);
-          
           // Update participants list
           await hybridActivityService.update(data.activityId, (current) => {
             // Start with existing participants to preserve names and other data
@@ -397,10 +374,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               }
             });
             
-            // Log the participants list for debugging
-            console.log(`Updated participants list for activity ${data.activityId}:`, 
-              updatedParticipants.map(p => `${p.name} (${p.id}): ${p.isConnected ? 'connected' : 'disconnected'}`));
-            
             current.participants = updatedParticipants;
             return current;
           });
@@ -429,13 +402,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       });
     
       socketInstance.on('connect_error', (err) => {
-        console.log('WebSocket connection error:', err.message);
         setIsConnected(false);
         
         connectionAttempts.current += 1;
         
         if (connectionAttempts.current >= maxReconnectAttempts) {
-          console.log('Max reconnection attempts reached');
           setError(`Connection failed after ${maxReconnectAttempts} attempts. Working in offline mode.`);
           setOffline(true);
         } else {
@@ -444,8 +415,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       });
       
       socketInstance.on('disconnect', (reason) => {
-        console.log('WebSocket disconnected:', reason);
-        
         // Check if component is still mounted before updating state
         try {
           setIsConnected(false);
@@ -484,8 +453,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     
     // Cleanup on unmount
     return () => {
-      console.log('WebSocketProvider cleanup');
-      
       // Clean up any pending timeouts
       if (leaveActivityTimeout) {
         clearTimeout(leaveActivityTimeout);
@@ -504,8 +471,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }*/
 
       if (currentActivity && currentUser && !isLeavingActivity) {
-        console.log(`Cleanup: Leaving activity ${currentActivity} for user`, currentUser?.id);
-        
         try {
           leaveActivity(false);
         } catch (error) {
@@ -575,7 +540,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     
     // Don't rejoin if already in the same activity as the same user
     if (currentActivity === activityId && currentUser?.id === user.id) {
-      console.log(`Already in activity ${activityId} as user ${user.id}, skipping join`);
       return;
     }
     
@@ -583,7 +547,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(user);
     
     if (!offline && isConnected && socketRef.current) {
-      console.log(`Joining WebSocket room for activity ${activityId} as user ${user.id}`);
       socketRef.current.emit('join_activity', { 
         activityId, 
         userId: user.id,
