@@ -9,7 +9,7 @@ import { hybridActivityService } from '@/core/services/hybridActivityService';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import { useWebSocket } from '@/core/services/websocketService';
 import { useActivities } from '@/core/hooks/useActivities';
-import { getAdminUrl } from '@/utils/adminUrls';
+import { getAdminUrl, getActivityUrl } from '@/utils/adminUrls';
 
 export default function AdminDashboardPage() {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
                   <ActivityCard 
                     key={activity.id} 
                     activity={activity} 
-                    onNavigate={() => router.push(`/activity/${activity.id}`)}
+                    onNavigate={() => window.open(getActivityUrl(`/activity/${activity.id}`), '_blank')}
                     onDelete={() => handleDeleteActivity(activity.id)}
                     onComplete={() => handleCompleteActivity(activity.id)}
                     onEdit={() => handleEditActivity(activity.id)}

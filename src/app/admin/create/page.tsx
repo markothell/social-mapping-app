@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { activityService } from '@/core/services/activityService';
-import { getAdminUrl } from '@/utils/adminUrls';
+import { getAdminUrl, getActivityUrl } from '@/utils/adminUrls';
 
 export default function CreateActivityPage() {
   const router = useRouter();
@@ -81,7 +81,7 @@ export default function CreateActivityPage() {
     const activity = activityService.create(activityType, activitySettings);
     
     // Navigate to the new activity
-    router.push(`/activity/${activity.id}`);
+    window.open(getActivityUrl(`/activity/${activity.id}`), '_blank');
   };
   
   return (

@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react';
+import { getActivityUrl } from '@/utils/adminUrls';
 
 export interface Activity {
   id: string;
@@ -118,7 +119,7 @@ export default function ActivityCard({
       
       <div className="activity-actions" onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={() => window.open(`/activity/${activity.id}`, '_blank')}
+          onClick={() => window.open(getActivityUrl(`/activity/${activity.id}`), '_blank')}
           className="go-to-button"
         >
           Go To Activity
