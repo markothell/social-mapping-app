@@ -9,6 +9,7 @@ import { hybridActivityService } from '@/core/services/hybridActivityService';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import { useWebSocket } from '@/core/services/websocketService';
 import { useActivities } from '@/core/hooks/useActivities';
+import { getAdminUrl } from '@/utils/adminUrls';
 
 export default function AdminDashboardPage() {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -19,7 +20,7 @@ export default function AdminDashboardPage() {
   const { activities, loading, error, refresh } = useActivities(activeFilter as any);
 
   const handleCreateActivity = () => {
-    router.push('/admin/create');
+    router.push(getAdminUrl('/admin/create'));
   };
 
   const handleDeleteActivity = async (activityId: string) => {
@@ -45,7 +46,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleEditActivity = (activityId: string) => {
-    router.push(`/admin/edit/${activityId}`);
+    router.push(getAdminUrl(`/admin/edit/${activityId}`));
   };
   
   return (

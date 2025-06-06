@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { activityService } from '@/core/services/activityService';
+import { getAdminUrl } from '@/utils/adminUrls';
 
 export default function CreateActivityPage() {
   const router = useRouter();
@@ -341,7 +342,7 @@ export default function CreateActivityPage() {
         )}
         
               <div className="form-actions">
-                <button type="button" onClick={() => router.push('/admin')}>
+                <button type="button" onClick={() => router.push(getAdminUrl('/admin'))}>
                   Cancel
                 </button>
                 <button type="submit" className="primary">

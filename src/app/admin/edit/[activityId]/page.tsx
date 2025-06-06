@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { hybridActivityService } from '@/core/services/hybridActivityService';
+import { getAdminUrl } from '@/utils/adminUrls';
 
 export default function EditActivityPage() {
   const router = useRouter();
@@ -147,7 +148,7 @@ export default function EditActivityPage() {
       
       if (success) {
         // Navigate back to admin panel
-        router.push('/admin');
+        router.push(getAdminUrl('/admin'));
       } else {
         alert('Failed to update activity. Please try again.');
       }
@@ -191,7 +192,7 @@ export default function EditActivityPage() {
         <main className="app-content">
           <div className="content-wrapper">
             <div className="error-message">{error}</div>
-            <Link href="/admin">Back to Admin</Link>
+            <a href={getAdminUrl('/admin')}>Back to Admin</a>
           </div>
         </main>
       </div>
@@ -456,7 +457,7 @@ export default function EditActivityPage() {
         )}
         
               <div className="form-actions">
-                <button type="button" onClick={() => router.push('/admin')}>
+                <button type="button" onClick={() => router.push(getAdminUrl('/admin'))}>
                   Cancel
                 </button>
                 <button type="submit" className="primary">
