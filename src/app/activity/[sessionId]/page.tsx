@@ -152,37 +152,10 @@ export default function ActivityPage({
     // Reset switching state
     setIsSwitchingUser(false);
     
-    // Navigate to appropriate phase
-    if (activity.phase === 'gathering' || activity.phase === 'tagging') {
-      router.push(`/activity/${activity.id}/tags`);
-    } else if (activity.phase === 'mapping') {
-      router.push(`/activity/${activity.id}/mapping`);
-    } else if (activity.phase === 'mapping-results') {
-      router.push(`/activity/${activity.id}/mapping-results`);
-    } else if (activity.phase === 'ranking') {
-      router.push(`/activity/${activity.id}/ranking`);
-    } else if (activity.phase === 'results') {
-      router.push(`/activity/${activity.id}/results`);
-    }
+    // Navigate to tag creation page by default
+    router.push(`/activity/${activity.id}/tags`);
   };
   
-  // Handle changing the phase of the activity (admin only)
-  const handlePhaseChange = (phase: string) => {
-    if (!activity || !isAdmin) return;
-    
-    // Navigate to the appropriate page based on the new phase
-    if (phase === 'gathering' || phase === 'tagging') {
-      router.push(`/activity/${activity.id}/tags`);
-    } else if (phase === 'mapping') {
-      router.push(`/activity/${activity.id}/mapping`);
-    } else if (phase === 'mapping-results') {
-      router.push(`/activity/${activity.id}/mapping-results`);
-    } else if (phase === 'ranking') {
-      router.push(`/activity/${activity.id}/ranking`);
-    } else if (phase === 'results') {
-      router.push(`/activity/${activity.id}/results`);
-    }
-  };
   
   if (loading) {
     return (
@@ -263,8 +236,7 @@ export default function ActivityPage({
         
         {isAdmin && user && (
           <AdminControls 
-            activity={activity} 
-            onChangePhase={handlePhaseChange} 
+            activity={activity}
           />
         )}
         

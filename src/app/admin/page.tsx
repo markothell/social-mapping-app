@@ -48,6 +48,17 @@ export default function AdminDashboardPage() {
   const handleEditActivity = (activityId: string) => {
     router.push(getAdminUrl(`/admin/edit/${activityId}`));
   };
+
+  const handleCloneActivity = async (activityId: string) => {
+    if (window.confirm('Are you sure you want to clone this activity? This will create a copy with the same settings but no user data.')) {
+      const clonedActivity = await hybridActivityService.clone(activityId);
+      if (clonedActivity) {
+        refresh(); // Refresh the list
+      } else {
+        alert('Failed to clone activity. Please try again.');
+      }
+    }
+  };
   
   return (
     <div className="activity-layout">
@@ -111,6 +122,7 @@ export default function AdminDashboardPage() {
                     onDelete={() => handleDeleteActivity(activity.id)}
                     onComplete={() => handleCompleteActivity(activity.id)}
                     onEdit={() => handleEditActivity(activity.id)}
+                    onClone={() => handleCloneActivity(activity.id)}
                   />
                 ))}
               </div>

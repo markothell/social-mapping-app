@@ -117,6 +117,7 @@ export interface Activity {
   settings: ActivitySettings;
   createdAt: Date;
   updatedAt: Date;
+  completedAt?: Date;
   status: 'active' | 'completed';
   participants: Participant[];
   phase: 'gathering' | 'tagging' | 'mapping' | 'mapping-results' | 'ranking' | 'results';

@@ -473,9 +473,38 @@ export const hybridActivityService = {
   async complete(id: string): Promise<Activity | null> {
     return this.update(id, activity => {
       activity.status = 'completed';
+      activity.completedAt = new Date();
       activity.updatedAt = new Date();
       return activity;
     });
+  },
+
+  /**
+   * Clone an activity (duplicate settings but no user data)
+   */
+  async clone(id: string): Promise<Activity | null> {
+    const originalActivity = await this.getById(id);
+    if (!originalActivity) {
+      console.warn(`Cannot clone activity ${id}: Activity not found`);
+      return null;
+    }
+
+    // Extract settings from original activity
+    const clonedSettings = {
+      entryView: { ...originalActivity.settings.entryView },
+      tagCreation: { ...originalActivity.settings.tagCreation },
+      mapping: originalActivity.type === 'mapping' ? { ...originalActivity.settings.mapping } : undefined,
+      ranking: originalActivity.type === 'ranking' ? { ...originalActivity.settings.ranking } : undefined,
+      results: { ...originalActivity.settings.results }
+    };
+
+    // Add " (Copy)" to the title
+    if (clonedSettings.entryView?.title) {
+      clonedSettings.entryView.title += ' (Copy)';
+    }
+
+    // Create new activity with cloned settings but no user data
+    return this.create(originalActivity.type as 'mapping' | 'ranking', clonedSettings);
   },
   
   /**
