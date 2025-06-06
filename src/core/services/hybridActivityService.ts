@@ -162,6 +162,7 @@ export const hybridActivityService = {
   /**
    * Get all activities
    * SOURCE OF TRUTH: MongoDB when online, localStorage when offline
+   * Includes locally created activities that haven't synced yet
    */
   async getAll(): Promise<Activity[]> {
     if (this.isOnline()) {
@@ -169,10 +170,26 @@ export const hybridActivityService = {
         // Get from MongoDB (source of truth when online)
         const remoteActivities = await mongoDbService.getActivities();
         
-        // Update local cache for offline access
+        // Get local activities
+        const localActivities = activityService.getAll();
+        
+        // Find local activities that haven't synced to MongoDB yet
+        const localOnlyActivities = localActivities.filter(local => {
+          // Include if it's marked as just created or creation attempted
+          if ((local as any)._justCreated || (local as any)._creationAttempted) {
+            return true;
+          }
+          // Also include if it doesn't exist in remote yet
+          return !remoteActivities.find(remote => remote.id === local.id);
+        });
+        
+        // Merge remote activities with local-only activities
+        const mergedActivities = [...remoteActivities, ...localOnlyActivities];
+        
+        // Update local cache for offline access (only with remote activities)
         this._updateLocalCache(remoteActivities);
         
-        return remoteActivities;
+        return mergedActivities;
       } catch (error) {
         console.warn('Network error, using cached data:', error);
       }
@@ -322,6 +339,11 @@ export const hybridActivityService = {
       pendingChanges.addCreateChange(localActivity);
     }
     
+    // Trigger UI refresh event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('activities_updated'));
+    }
+    
     // Return the local activity immediately without waiting for network
     return localActivity;
   },
@@ -464,19 +486,33 @@ export const hybridActivityService = {
     }
     
     // Delete locally
-    return activityService.delete(id);
+    const success = activityService.delete(id);
+    
+    // Trigger UI refresh event
+    if (success && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('activities_updated'));
+    }
+    
+    return success;
   },
   
   /**
    * Mark an activity as completed
    */
   async complete(id: string): Promise<Activity | null> {
-    return this.update(id, activity => {
+    const result = await this.update(id, activity => {
       activity.status = 'completed';
       activity.completedAt = new Date();
       activity.updatedAt = new Date();
       return activity;
     });
+    
+    // Trigger UI refresh event
+    if (result && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('activities_updated'));
+    }
+    
+    return result;
   },
 
   /**
@@ -498,13 +534,32 @@ export const hybridActivityService = {
       results: { ...originalActivity.settings.results }
     };
 
-    // Add " (Copy)" to the title
+    // Generate unique name with format [Name]_[#]
     if (clonedSettings.entryView?.title) {
-      clonedSettings.entryView.title += ' (Copy)';
+      const originalTitle = clonedSettings.entryView.title;
+      const allActivities = await this.getAll();
+      
+      // Find existing clones with pattern [originalTitle]_[number]
+      const clonePattern = new RegExp(`^${originalTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_\\d+$`);
+      const existingClones = allActivities.filter(activity => 
+        activity.settings.entryView?.title === originalTitle || 
+        clonePattern.test(activity.settings.entryView?.title || '')
+      );
+      
+      // Generate next number
+      const nextNumber = existingClones.length + 1;
+      clonedSettings.entryView.title = `${originalTitle}_${nextNumber}`;
     }
 
     // Create new activity with cloned settings but no user data
-    return this.create(originalActivity.type as 'mapping' | 'ranking', clonedSettings);
+    const clonedActivity = await this.create(originalActivity.type as 'mapping' | 'ranking', clonedSettings);
+    
+    // Trigger UI refresh event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('activities_updated'));
+    }
+    
+    return clonedActivity;
   },
   
   /**
