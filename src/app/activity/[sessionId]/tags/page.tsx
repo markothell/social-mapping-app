@@ -166,7 +166,21 @@ export default function TagsPage({
           </p>
         </div>
 
-        {tagCreationEnabled && (
+        {activity.status === 'completed' && (
+          <div className="completion-strip">
+            <div className="completion-content">
+              <span className="completion-text">Activity Completed</span>
+              <button
+                onClick={() => router.push(`/activity/${activity.id}/mapping-results`)}
+                className="view-results-button"
+              >
+                View Results
+              </button>
+            </div>
+          </div>
+        )}
+
+        {tagCreationEnabled && activity.status !== 'completed' && (
           <TagCreationForm onAddTag={handleAddTag} />
         )}
 
@@ -174,7 +188,7 @@ export default function TagsPage({
           tags={activity.tags || []}
           currentUser={user}
           isAdmin={isAdmin}
-          votingEnabled={votingEnabled}
+          votingEnabled={votingEnabled && activity.status !== 'completed'}
           voteThreshold={voteThreshold}
           onVote={handleVoteTag}
           onDelete={handleDeleteTag}
@@ -293,6 +307,44 @@ export default function TagsPage({
         .primary-button:disabled {
           background-color: #c6d4e8;
           cursor: not-allowed;
+        }
+        
+        .completion-strip {
+          background-color: #fef7e0;
+          border: 1px solid #f9d71c;
+          border-radius: 8px;
+          padding: 1rem;
+          margin-bottom: 2rem;
+          display: flex;
+          justify-content: center;
+        }
+        
+        .completion-content {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .completion-text {
+          color: #b06000;
+          font-weight: 600;
+          font-size: 1.1rem;
+        }
+        
+        .view-results-button {
+          background-color: #f9ab00;
+          color: #b06000;
+          border: none;
+          border-radius: 4px;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          font-weight: 500;
+        }
+        
+        .view-results-button:hover {
+          background-color: #f29900;
         }
       `}</style>
     </div>

@@ -438,6 +438,20 @@ export default function MappingPage({
           
         </div>
         
+        {activity.status === 'completed' && (
+          <div className="completion-strip">
+            <div className="completion-content">
+              <span className="completion-text">Activity Completed</span>
+              <button
+                onClick={() => router.push(`/activity/${activity.id}/mapping-results`)}
+                className="view-results-button"
+              >
+                View Results
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div className="mapping-workspace">
           <TagSelectionPanel 
             tags={approvedTags}
@@ -455,9 +469,10 @@ export default function MappingPage({
               }))}
             selectedTag={selectedTag}
             selectedInstanceId={selectedInstanceId}
-            onSelectTag={handleTagSelect}
-            onAddTagInstance={handleAddTagInstance}
-            onRemoveTagInstance={handleRemoveTagInstance}
+            onSelectTag={activity.status === 'completed' ? () => {} : handleTagSelect}
+            onAddTagInstance={activity.status === 'completed' ? () => {} : handleAddTagInstance}
+            onRemoveTagInstance={activity.status === 'completed' ? () => {} : handleRemoveTagInstance}
+            disabled={activity.status === 'completed'}
           />
           
           <div className="map-and-context-container">
@@ -467,7 +482,8 @@ export default function MappingPage({
               selectedInstanceId={selectedInstanceId}
               userMappings={userMappings}
               approvedTagIds={approvedTags.map(tag => tag.id)}
-              onPositionTag={handleTagPosition}
+              onPositionTag={activity.status === 'completed' ? () => {} : handleTagPosition}
+              disabled={activity.status === 'completed'}
             />
             
             {/* Context Display - Single input for selected tag */}
@@ -481,7 +497,7 @@ export default function MappingPage({
                     : 'Context'
                   }
                 </h3>
-                {selectedTag && !isAddingNewInstance && (
+                {selectedTag && !isAddingNewInstance && activity.status !== 'completed' && (
                   <button
                     className="update-context-button"
                     onClick={() => {
@@ -518,7 +534,7 @@ export default function MappingPage({
                   placeholder={selectedTag ? "Add context for this positioning..." : "Select a tag to add context"}
                   className="context-input"
                   rows={4}
-                  disabled={!selectedTag || isAddingNewInstance}
+                  disabled={!selectedTag || isAddingNewInstance || activity.status === 'completed'}
                 />
               </div>
             </div>
@@ -785,6 +801,44 @@ export default function MappingPage({
         .primary-button:disabled {
           background-color: #c6d4e8;
           cursor: not-allowed;
+        }
+        
+        .completion-strip {
+          background-color: #fef7e0;
+          border: 1px solid #f9d71c;
+          border-radius: 8px;
+          padding: 1rem;
+          margin-bottom: 2rem;
+          display: flex;
+          justify-content: center;
+        }
+        
+        .completion-content {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .completion-text {
+          color: #b06000;
+          font-weight: 600;
+          font-size: 1.1rem;
+        }
+        
+        .view-results-button {
+          background-color: #f9ab00;
+          color: #b06000;
+          border: none;
+          border-radius: 4px;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          font-weight: 500;
+        }
+        
+        .view-results-button:hover {
+          background-color: #f29900;
         }
         
         @media (max-width: 992px) {

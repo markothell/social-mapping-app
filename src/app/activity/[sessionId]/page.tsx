@@ -200,6 +200,10 @@ export default function ActivityPage({
             onCancel={isSwitchingUser ? handleCancelSwitch : undefined}
             showCancel={isSwitchingUser}
           />
+        ) : activity.status === 'completed' ? (
+          <div className="participant-info">
+            {/* Hide user participation info when activity is completed */}
+          </div>
         ) : (
           <div className="participant-info">
             <p>You are participating as: <strong>{user.name}</strong></p>
