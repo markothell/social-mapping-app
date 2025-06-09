@@ -27,25 +27,50 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
   
   const { notifications, markNewTagsSeen, markApprovedTagsSeen, getNewTagsCountForUser } = useNotifications();
 
-  const getSubtitle = () => {
-    if (pathname.includes('/mapping-results')) {
-      return 'Results';
-    } else if (pathname.includes('/mapping')) {
-      return 'Map Concepts';
-    } else if (pathname.includes('/tags')) {
-      return 'Nominate topics';
-    } else {
-      // Check both hostName prop and activity.settings.entryView.hostName for backwards compatibility
-      const effectiveHostName = hostName || activity?.settings?.entryView?.hostName;
-      return effectiveHostName ? `Created by ${effectiveHostName}` : 'Social Activity';
+  const renderIcon = (iconType: string, isActive: boolean = false) => {
+    const iconColor = isActive ? 'white' : 'var(--carafe-brown)';
+    const iconSize = '20';
+    
+    switch (iconType) {
+      case 'home':
+        return (
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9,22 9,12 15,12 15,22"/>
+          </svg>
+        );
+      case 'clock':
+        return (
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 16,14"/>
+          </svg>
+        );
+      case 'grid':
+        return (
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        );
+      case 'chart':
+        return (
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2">
+            <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+          </svg>
+        );
+      default:
+        return <span style={{color: iconColor}}>{iconType}</span>;
     }
   };
 
   const steps: NavigationStep[] = [
-    { id: 'home', label: 'Home', icon: '🏠', path: sessionId ? `/activity/${sessionId}` : '/' },
-    { id: 'nominate', label: 'Nominate', icon: '✚', path: sessionId ? `/activity/${sessionId}/tags` : undefined },
-    { id: 'map', label: 'Map', icon: '📊', path: sessionId ? `/activity/${sessionId}/mapping` : undefined },
-    { id: 'results', label: 'Results', icon: '📈', path: sessionId ? `/activity/${sessionId}/mapping-results` : undefined }
+    { id: 'home', label: 'Home', icon: 'home', path: sessionId ? `/activity/${sessionId}` : '/' },
+    { id: 'nominate', label: 'Nominate', icon: 'clock', path: sessionId ? `/activity/${sessionId}/tags` : undefined },
+    { id: 'map', label: 'Map', icon: 'grid', path: sessionId ? `/activity/${sessionId}/mapping` : undefined },
+    { id: 'results', label: 'Results', icon: 'chart', path: sessionId ? `/activity/${sessionId}/mapping-results` : undefined }
   ];
 
   useEffect(() => {
@@ -80,21 +105,17 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
 
   return (
     <div className="global-navigation">
-      <div className="nav-container">
-        <div className="nav-brand">
-          <span className="brand-text">FORM.{activityTitle || 'activity'}</span>
-          <span className="brand-subtitle">{getSubtitle()}</span>
-        </div>
-        
+      <div className="nav-container">        
         <div className="nav-steps">
           {steps.map((step, index) => (
             <div key={step.id} className="nav-step-container">
               <button
-                className={`nav-step ${index <= currentStep ? 'active' : ''} ${!step.path ? 'disabled' : ''}`}
+                className={`nav-step ${index === currentStep ? 'active' : ''} ${!step.path ? 'disabled' : ''}`}
                 onClick={() => handleStepClick(index, step)}
                 disabled={!step.path}
               >
-                <span className="step-icon">{step.icon}</span>
+                <span className="step-icon">{renderIcon(step.icon, index === currentStep)}</span>
+                <span className="step-label">{step.label}</span>
                 {step.id === 'nominate' && currentUserId && getNewTagsCountForUser(currentUserId) > 0 && (
                   <span className="notification-dot"></span>
                 )}
@@ -102,52 +123,37 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
                   <span className="notification-dot"></span>
                 )}
               </button>
-              <span className="step-label">{step.label}</span>
-              {index < steps.length - 1 && (
-                <div className={`step-connector ${index < currentStep ? 'completed' : ''}`}></div>
-              )}
             </div>
           ))}
         </div>
       </div>
 
       <style jsx>{`
+        /* Mobile-first approach: Bottom navigation by default */
         .global-navigation {
-          background: linear-gradient(135deg, #f5c2c7 0%, #f8d7da 100%);
-          border-radius: 8px 8px 0 0;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: white;
+          border-top: 1px solid var(--dust-beige);
+          z-index: 1000;
+          padding: 0.5rem 0;
         }
 
         .nav-container {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 1rem 2rem;
-        }
-
-        .nav-brand {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .brand-text {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #333;
-          line-height: 1;
-        }
-
-        .brand-subtitle {
-          font-size: 0.9rem;
-          color: #666;
-          margin-top: -2px;
+          justify-content: center;
+          max-width: 100%;
+          margin: 0 auto;
         }
 
         .nav-steps {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          justify-content: space-around;
+          width: 100%;
+          max-width: 400px;
         }
 
         .nav-step-container {
@@ -155,26 +161,27 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
           flex-direction: column;
           align-items: center;
           position: relative;
+          flex: 1;
         }
 
         .nav-step {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          border: 3px solid #999;
-          background: white;
+          background: transparent;
+          border: none;
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           position: relative;
-          z-index: 2;
+          padding: 0.5rem;
+          border-radius: 12px;
+          min-height: 60px;
+          min-width: 60px;
+          justify-content: center;
         }
 
         .nav-step.active {
-          border-color: #dc3545;
-          background: #dc3545;
+          background: var(--rust-button);
           color: white;
         }
 
@@ -183,91 +190,110 @@ export default function GlobalNavigation({ sessionId, activityTitle, onNavigate,
           opacity: 0.5;
         }
 
-        .nav-step:hover:not(.disabled) {
-          transform: scale(1.05);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        .nav-step:hover:not(.disabled):not(.active) {
+          background: var(--dust-beige);
         }
 
         .step-icon {
-          font-size: 1.2rem;
-        }
-
-        .notification-badge {
-          position: absolute;
-          top: -8px;
-          right: -8px;
-          background: #dc3545;
-          color: white;
-          border-radius: 50%;
-          width: 20px;
-          height: 20px;
-          font-size: 0.7rem;
+          margin-bottom: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: bold;
-          border: 2px solid white;
-          z-index: 3;
+        }
+
+        .step-label {
+          font-size: 0.7rem;
+          color: var(--carafe-brown);
+          text-align: center;
+          font-weight: 500;
+          line-height: 1;
+        }
+
+        .nav-step.active .step-label {
+          color: white;
         }
 
         .notification-dot {
           position: absolute;
-          top: -4px;
-          right: -4px;
-          background: #dc3545;
+          top: 2px;
+          right: 6px;
+          background: var(--rust-button);
           border-radius: 50%;
-          width: 12px;
-          height: 12px;
+          width: 10px;
+          height: 10px;
           border: 2px solid white;
-          z-index: 3;
+          z-index: 10;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
-        .step-label {
-          font-size: 0.8rem;
-          color: #666;
-          margin-top: 0.5rem;
-          text-align: center;
-        }
+        /* Desktop: Position under activity header */
+        @media (min-width: 768px) {
+          .global-navigation {
+            position: relative;
+            background: transparent;
+            border-top: none;
+            border-bottom: none;
+            border-radius: 0;
+            padding: 0 1rem 1rem 1rem;
+          }
 
-        .step-connector {
-          position: absolute;
-          top: 25px;
-          left: 50px;
-          width: 40px;
-          height: 3px;
-          background: #ddd;
-          z-index: 1;
-          transition: background-color 0.3s ease;
-        }
-
-        .step-connector.completed {
-          background: #dc3545;
-        }
-
-        @media (max-width: 768px) {
           .nav-container {
-            flex-direction: column;
-            gap: 1rem;
-            padding: 0 1rem;
+            justify-content: flex-start;
+            max-width: 1200px;
+            margin: 0;
           }
 
           .nav-steps {
-            gap: 0.5rem;
+            max-width: none;
+            width: auto;
+            gap: 1rem;
+          }
+
+          .nav-step-container {
+            flex: none;
           }
 
           .nav-step {
-            width: 40px;
-            height: 40px;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.75rem;
+            min-height: 60px;
+            min-width: 60px;
+            border-radius: 12px;
+            background: transparent;
+            border: 2px solid var(--carafe-brown);
+          }
+
+          .nav-step.active {
+            background: var(--rust-button);
+            color: white;
+            border: 2px solid var(--rust-button);
+          }
+
+          .nav-step.active .step-label {
+            color: white;
+          }
+
+          .nav-step:hover:not(.disabled):not(.active) {
+            background: var(--dust-beige);
           }
 
           .step-icon {
-            font-size: 1rem;
+            margin-bottom: 4px;
           }
 
-          .step-connector {
-            width: 30px;
-            left: 40px;
-            top: 20px;
+          .step-label {
+            font-size: 0.7rem;
+          }
+
+          .notification-dot {
+            top: 2px;
+            right: 6px;
+            width: 10px;
+            height: 10px;
+            z-index: 10;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
           }
         }
       `}</style>

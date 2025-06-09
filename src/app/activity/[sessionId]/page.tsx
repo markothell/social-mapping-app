@@ -5,6 +5,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import ActivityNotFound from '@/components/ActivityNotFound';
+import ActivityHeader from '@/components/ActivityHeader';
 import EntryForm from '@/components/EntryForm';
 import AdminControls from '@/components/AdminControls';
 import ConnectionStatus from '@/components/ConnectionStatus';
@@ -172,6 +173,10 @@ export default function ActivityPage({
   
   return (
     <div className="activity-page">
+      <ActivityHeader 
+        activityTitle={activity?.settings?.entryView?.title}
+        hostName={activity?.hostName}
+      />
       <div className="activity-container">
         <div className="activity-header">
           <h1>Welcome</h1>
@@ -264,11 +269,11 @@ export default function ActivityPage({
         }
         
         .activity-container {
-          background-color: white;
-          border-radius: 0 0 8px 8px;
+          background-color: #FDF6E9;
+          border-radius: 12px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
           padding: 2rem;
-          margin-top: -1px;
+          margin: 1rem;
         }
         
         .activity-header {

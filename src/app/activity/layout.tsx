@@ -77,30 +77,11 @@ export default function ActivityLayout({
 
   return (
     <div className="activity-layout">
-      <header className="app-header">
-        <div className="container">
-          <Link href="/" className="logo" style={{ color: 'var(--logo-color)' }}>
-            Social Insight Tools
-          </Link>
-          <div className="user-name">
-            User: {userName}
-          </div>
-        </div>
-      </header>
-      
       <main className="app-content">
         <div className="content-wrapper">
-          {/* Always show navigation at the activity level to prevent unmounting/remounting */}
-          <GlobalNavigation sessionId={sessionId} activityTitle={activityTitle} hostName={hostName} activity={activity} currentUserId={userId} />
           {children}
         </div>
       </main>
-      
-      <footer className="app-footer">
-        <div className="container">
-          <p>Social Insight Tools</p>
-        </div>
-      </footer>
 
       <style jsx>{`
         .activity-layout {
@@ -109,62 +90,17 @@ export default function ActivityLayout({
           flex-direction: column;
         }
         
-        .app-header {
-          background-color: #f8f9fa;
-          padding: 1.5rem 0;
-          border-bottom: 1px solid #e8eaed;
-        }
-        
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 1rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .user-name {
-          color: #5f6368;
-          font-weight: 500;
-          font-size: 0.9rem;
-        }
-        
-        .app-header {
-          --logo-color: #5f6368;
-        }
-        
-        .app-header .logo {
-          font-size: 2.4rem;
-          font-weight: bold;
-          text-decoration: none;
-        }
-        
         .app-content {
           flex: 1;
-          background-color: #f8f9fa;
-          color: #202124;
-          padding: 2rem 0;
+          background: transparent;
+          color: var(--carafe-brown);
+          padding: 0;
         }
 
         .content-wrapper {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 0 2rem;
-        }
-        
-        .app-footer {
-          background-color: #f8f9fa;
-          padding: 1.5rem 0;
-          margin-top: auto;
-          border-top: 1px solid #e8eaed;
-        }
-        
-        .app-footer p {
-          margin: 0;
-          color: #5f6368;
-          font-size: 0.9rem;
-          text-align: center;
+          padding: 0;
         }
       `}</style>
     </div>

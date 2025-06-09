@@ -8,6 +8,8 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import TagCreationForm from '@/components/TagCreationForm';
 import TagList from '@/components/TagList';
 import ActivityNotFound from '@/components/ActivityNotFound';
+import ActivityHeader from '@/components/ActivityHeader';
+import GlobalNavigation from '@/components/GlobalNavigation';
 import ConnectionStatus from '@/components/ConnectionStatus';
 
 function useParams<T>(params: T | Promise<T>): T {
@@ -158,6 +160,20 @@ export default function TagsPage({
 
   return (
     <div className="tags-page">
+      <ActivityHeader 
+        activityTitle={activity?.settings?.entryView?.title}
+        subtitle="1: Nominate Sub-Topics"
+        hostName={activity?.hostName}
+      />
+      
+      <GlobalNavigation 
+        sessionId={sessionId} 
+        activityTitle={activity?.settings?.entryView?.title}
+        hostName={activity?.hostName}
+        activity={activity}
+        currentUserId={user?.id}
+      />
+      
       <div className="tags-container">
         <div className="tags-header">
           <h1 className="core-question">{activity.settings.tagCreation?.coreQuestion || 'What topics should we explore?'}</h1>
@@ -180,64 +196,89 @@ export default function TagsPage({
           </div>
         )}
 
-        {tagCreationEnabled && activity.status !== 'completed' && (
-          <TagCreationForm onAddTag={handleAddTag} />
-        )}
+        <div className="content-area">
+          <TagList
+            tags={activity.tags || []}
+            currentUser={user}
+            isAdmin={isAdmin}
+            votingEnabled={votingEnabled && activity.status !== 'completed'}
+            voteThreshold={voteThreshold}
+            onVote={handleVoteTag}
+            onDelete={handleDeleteTag}
+          />
 
-        <TagList
-          tags={activity.tags || []}
-          currentUser={user}
-          isAdmin={isAdmin}
-          votingEnabled={votingEnabled && activity.status !== 'completed'}
-          voteThreshold={voteThreshold}
-          onVote={handleVoteTag}
-          onDelete={handleDeleteTag}
-        />
-
-        <ConnectionStatus 
-          status={{ 
-            isConnected: isConnected, 
-            error: connectionError 
-          }} 
-        />
-
-        <div className="navigation-controls">
-          <button
-            onClick={() => router.push(`/activity/${activity.id}`)}
-            className="secondary-button"
-          >
-            Back to Activity
-          </button>
-          
-          <button
-            onClick={() => {
-              // Use the real-time changePhase function if admin
-              if (isAdmin) {
-                changePhase('mapping');
-              }
-              
-              router.push(`/activity/${activity.id}/mapping`);
-            }}
-            className="primary-button"
-            disabled={!hasApprovedTags}
-            title={!hasApprovedTags ? "You need at least one approved tag to continue" : ""}
-          >
-            Continue to Mapping
-          </button>
+          {tagCreationEnabled && activity.status !== 'completed' && (
+            <div className="sticky-input">
+              <TagCreationForm onAddTag={handleAddTag} />
+            </div>
+          )}
         </div>
+      </div>
+
+      <ConnectionStatus 
+        status={{ 
+          isConnected: isConnected, 
+          error: connectionError 
+        }} 
+      />
+
+      <div className="navigation-controls">
+        <button
+          onClick={() => router.push(`/activity/${activity.id}`)}
+          className="secondary-button"
+        >
+          Back to Activity
+        </button>
+        
+        <button
+          onClick={() => {
+            // Use the real-time changePhase function if admin
+            if (isAdmin) {
+              changePhase('mapping');
+            }
+            
+            router.push(`/activity/${activity.id}/mapping`);
+          }}
+          className="primary-button"
+          disabled={!hasApprovedTags}
+          title={!hasApprovedTags ? "You need at least one approved tag to continue" : ""}
+        >
+          Continue to Mapping
+        </button>
       </div>
       
       <style jsx>{`
         .tags-page {
           color: #202124;
+          padding-bottom: 1rem;
         }
         
         .tags-container {
-          background-color: white;
-          border-radius: 0 0 8px 8px;
+          background-color: #FDF6E9;
+          border-radius: 12px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
           padding: 2rem;
-          margin-top: -1px;
+          margin: 1rem;
+          margin-bottom: 2rem;
+          height: calc(100vh - 200px);
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .content-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        
+        .sticky-input {
+          position: sticky;
+          bottom: 0;
+          background-color: #FDF6E9;
+          padding-top: 0.75rem;
+          border-top: 1px solid #E8C4A0;
+          margin-top: 0.5rem;
         }
         
         .tags-header {
@@ -272,6 +313,10 @@ export default function TagsPage({
           margin-top: 3rem;
           padding-top: 1.5rem;
           border-top: 1px solid #eee;
+        }
+        
+        .navigation-controls {
+          display: none;
         }
         
         .secondary-button {

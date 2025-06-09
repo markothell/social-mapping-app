@@ -32,93 +32,78 @@ export default function TagCreationForm({ onAddTag }: TagCreationFormProps) {
 
   return (
     <div className="tag-creation-form">
-      <h2>Add a New Tag</h2>
-      
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="tagText">Tag Text</label>
-          <textarea
-            id="tagText"
+        <div className="input-container">
+          <input
+            type="text"
             value={tagText}
             onChange={(e) => setTagText(e.target.value)}
-            placeholder="Enter a concept, idea, or topic"
-            rows={3}
+            placeholder="Enter Sub-topic"
             maxLength={100}
+            className="tag-input"
           />
-          <div className="char-counter">
-            {tagText.length}/100 characters
-          </div>
-          {error && <div className="error-message">{error}</div>}
+          <button type="submit" className="add-button">
+            +
+          </button>
         </div>
-        
-        <button type="submit" className="add-button">
-          Add Tag
-        </button>
+        {error && <div className="error-message">{error}</div>}
       </form>
 
       <style jsx>{`
         .tag-creation-form {
-          margin-bottom: 2rem;
-          padding: 1.5rem;
-          background-color: #f8f9fa;
-          border-radius: 8px;
+          margin-bottom: 0;
         }
         
-        h2 {
-          margin-top: 0;
-          margin-bottom: 1rem;
-          font-size: 1.3rem;
-          color: #202124;
+        .input-container {
+          display: flex;
+          align-items: center;
+          background-color: #FDF0E1;
+          border-radius: 25px;
+          padding: 0.5rem;
+          border: 1px solid #E8C4A0;
         }
         
-        .form-group {
-          margin-bottom: 1rem;
-        }
-        
-        .form-group label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 500;
-          color: #202124;
-        }
-        
-        .form-group textarea {
-          width: 100%;
-          padding: 0.75rem;
-          border: 1px solid #dadce0;
-          border-radius: 4px;
+        .tag-input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          padding: 0.75rem 1rem;
           font-size: 1rem;
-          resize: vertical;
+          outline: none;
+          color: #202124;
         }
         
-        .char-counter {
-          text-align: right;
-          font-size: 0.8rem;
-          color: #5f6368;
-          margin-top: 0.25rem;
+        .tag-input::placeholder {
+          color: #8B7355;
+        }
+        
+        .add-button {
+          background-color: #F9AB00;
+          color: #202124;
+          border: none;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+        }
+        
+        .add-button:hover {
+          background-color: #F29900;
+          transform: scale(1.05);
         }
         
         .error-message {
           color: #ea4335;
           font-size: 0.9rem;
           margin-top: 0.5rem;
-        }
-        
-        .add-button {
-          background-color: #1a73e8;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          padding: 0.75rem 1.5rem;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: background-color 0.2s;
-          display: block;
-          width: 100%;
-        }
-        
-        .add-button:hover {
-          background-color: #1765cc;
+          padding-left: 1rem;
         }
       `}</style>
     </div>

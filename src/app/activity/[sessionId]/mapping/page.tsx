@@ -7,6 +7,8 @@ import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import MappingGrid from '@/components/MappingGrid';
 import TagSelectionPanel from '@/components/TagSelectionPanel';
 import ActivityNotFound from '@/components/ActivityNotFound';
+import ActivityHeader from '@/components/ActivityHeader';
+import GlobalNavigation from '@/components/GlobalNavigation';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
 
@@ -422,23 +424,35 @@ export default function MappingPage({
 
   return (
     <div className="mapping-page">
-      <div className="mapping-container">
-        <div className="mapping-header">
-          <h1 className="core-question">{activity.settings.mapping?.coreQuestion || 'Position each tag on the grid'}</h1>
-          
-          <div className="mapping-instructions">
-            <p>
-              {mappingSettings.instruction || 
-                `Position each tag on the grid according to your perspective.${
-                  mappingSettings.enableAnnotations ? ' You can add comments to explain your choices.' : ''
-                }`
-              }
-            </p>
-          </div>
-          
-        </div>
+      <ActivityHeader 
+        activityTitle={activity?.settings?.entryView?.title}
+        subtitle="2: Map"
+        hostName={activity?.hostName}
+      />
+      
+      <GlobalNavigation 
+        sessionId={sessionId} 
+        activityTitle={activity?.settings?.entryView?.title}
+        hostName={activity?.hostName}
+        activity={activity}
+        currentUserId={user?.id}
+      />
+      
+      <div className="mapping-header">
+        <h1 className="core-question">{activity.settings.mapping?.coreQuestion || 'Position each tag on the grid'}</h1>
         
-        {activity.status === 'completed' && (
+        <div className="mapping-instructions">
+          <p>
+            {mappingSettings.instruction || 
+              `Position each tag on the grid according to your perspective.${
+                mappingSettings.enableAnnotations ? ' You can add comments to explain your choices.' : ''
+              }`
+            }
+          </p>
+        </div>
+      </div>
+      
+      {activity.status === 'completed' && (
           <div className="completion-strip">
             <div className="completion-content">
               <span className="completion-text">Activity Completed</span>
@@ -571,7 +585,6 @@ export default function MappingPage({
             {isAdmin ? 'Complete and View Results' : 'Submit My Mappings'}
           </button>
         </div>
-      </div>
 
       <UnsavedChangesDialog
         isOpen={showUnsavedDialog}
@@ -585,17 +598,12 @@ export default function MappingPage({
           color: #202124;
         }
         
-        .mapping-container {
-          background-color: white;
-          border-radius: 0 0 8px 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-          padding: 2rem;
-          margin-top: -1px;
-        }
         
         .mapping-header {
-          margin-bottom: 2rem;
+          margin: 0 1rem 1rem 1rem;
+          padding: 2rem;
           text-align: center;
+          background: transparent;
         }
         
         .core-question {
@@ -626,6 +634,11 @@ export default function MappingPage({
           gap: 2rem;
           margin-bottom: 2rem;
           position: relative;
+          background-color: #FDF6E9;
+          border-radius: 12px;
+          padding: 2rem;
+          margin: 1rem;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         
         .mapping-workspace :global(.tag-selection-panel) {
@@ -858,6 +871,12 @@ export default function MappingPage({
           
           .mapping-container {
             padding: 1.5rem;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .navigation-controls {
+            display: none;
           }
         }
       `}</style>

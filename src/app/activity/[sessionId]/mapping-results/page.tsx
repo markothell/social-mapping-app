@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import MappingResultsVisualization from '@/components/MappingResultsVisualization';
 import ActivityNotFound from '@/components/ActivityNotFound';
+import ActivityHeader from '@/components/ActivityHeader';
+import GlobalNavigation from '@/components/GlobalNavigation';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import { formatMappingsAsCSV, formatMappingsAsJSON } from '@/utils/mappingDataUtils';
 
@@ -100,19 +102,31 @@ export default function MappingResultsPage({
 
   return (
     <div className="mapping-results-page">
-      <div className="results-container">
-        <div className="results-header">
-          <h1 className="core-question">Results</h1>
-          
-          <div className="results-instructions">
-            <p>
-              {activity.settings?.results?.instruction || 'Review the collective mapping to understand different perspectives and insights.'}
-            </p>
-          </div>
-          
-        </div>
+      <ActivityHeader 
+        activityTitle={activity?.settings?.entryView?.title}
+        subtitle="3: Results"
+        hostName={activity?.hostName}
+      />
+      
+      <GlobalNavigation 
+        sessionId={sessionId} 
+        activityTitle={activity?.settings?.entryView?.title}
+        hostName={activity?.hostName}
+        activity={activity}
+        currentUserId={user?.id}
+      />
+      
+      <div className="results-header">
+        <h1 className="core-question">Results</h1>
         
-        {hasEnoughData ? (
+        <div className="results-instructions">
+          <p>
+            {activity.settings?.results?.instruction || 'Review the collective mapping to understand different perspectives and insights.'}
+          </p>
+        </div>
+      </div>
+      
+      {hasEnoughData ? (
           <MappingResultsVisualization
             settings={activity.settings.mapping}
             tags={approvedTags}
@@ -199,24 +213,18 @@ export default function MappingResultsPage({
             </button>
           )}
         </div>
-      </div>
 
       <style jsx>{`
         .mapping-results-page {
           color: #202124;
         }
         
-        .results-container {
-          background-color: white;
-          border-radius: 0 0 8px 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-          padding: 2rem;
-          margin-top: -1px;
-        }
         
         .results-header {
-          margin-bottom: 2rem;
+          margin: 0 1rem 1rem 1rem;
+          padding: 2rem;
           text-align: center;
+          background: transparent;
         }
         
         .core-question {
@@ -369,18 +377,7 @@ export default function MappingResultsPage({
           }
           
           .navigation-controls {
-            flex-wrap: wrap;
-          }
-          
-          .primary-button {
-            margin-left: 0;
-            width: 100%;
-            order: -1;
-            margin-bottom: 0.5rem;
-          }
-          
-          .secondary-button {
-            flex: 1;
+            display: none;
           }
         }
       `}</style>
