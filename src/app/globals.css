@@ -22,16 +22,92 @@
   --font-mono: var(--font-geist-mono);
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
   background: linear-gradient(to bottom, #F7E9CB 0%, #D8CD9D 100%);
   min-height: 100vh;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Mobile navigation spacing */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 80px; /* Space for fixed bottom navigation */
+    padding-bottom: 80px;
+  }
+}
+
+/* Ensure proper viewport handling */
+@supports (height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+}
+
+/* Improve touch targets for mobile */
+@media (max-width: 768px) {
+  button, 
+  [role="button"], 
+  input[type="submit"], 
+  input[type="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  
+  /* Improve tap targets */
+  a, button, [role="button"] {
+    -webkit-tap-highlight-color: rgba(232, 108, 43, 0.2);
+  }
+  
+  /* Smooth scrolling for touch */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Improve focus styles for accessibility */
+*:focus {
+  outline: 2px solid var(--rust-button);
+  outline-offset: 2px;
+}
+
+/* Safe area handling for modern devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+  
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: max(80px, env(safe-area-inset-bottom) + 80px);
+    }
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    font-weight: 400;
   }
 }

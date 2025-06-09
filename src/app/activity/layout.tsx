@@ -88,6 +88,8 @@ export default function ActivityLayout({
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+          height: 100vh;
+          overflow: hidden;
         }
         
         .app-content {
@@ -95,12 +97,41 @@ export default function ActivityLayout({
           background: transparent;
           color: var(--carafe-brown);
           padding: 0;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          min-height: 0;
         }
 
         .content-wrapper {
           max-width: 1200px;
           margin: 0 auto;
           padding: 0;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          width: 100%;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+          .activity-layout {
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile browsers */
+          }
+          
+          .content-wrapper {
+            max-width: none;
+            height: 100%;
+          }
+        }
+        
+        /* Handle safe areas on modern devices */
+        @supports (padding: max(0px)) {
+          .content-wrapper {
+            padding-top: env(safe-area-inset-top);
+          }
         }
       `}</style>
     </div>
