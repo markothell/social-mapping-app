@@ -228,6 +228,38 @@ export default function TagsPage({
             onDelete={handleDeleteTag}
           />
         </div>
+
+        {/* Desktop Add Tag Input - Bottom of Container */}
+        {tagCreationEnabled && activity.status !== 'completed' && (
+          <div className="desktop-add-tag">
+            <div className="add-tag-input-container">
+              <input
+                type="text"
+                placeholder="Enter Sub-topic"
+                className="add-tag-input"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    handleAddTag(e.currentTarget.value.trim());
+                    e.currentTarget.value = '';
+                  }
+                }}
+              />
+              <button
+                className="add-tag-button"
+                onClick={() => {
+                  const input = document.querySelector('.add-tag-input') as HTMLInputElement;
+                  if (input && input.value.trim()) {
+                    handleAddTag(input.value.trim());
+                    input.value = '';
+                  }
+                }}
+                aria-label="Add tag"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Floating Action Button for adding tags */}
@@ -395,6 +427,59 @@ export default function TagsPage({
           color: #5f6368;
         }
         
+        .desktop-add-tag {
+          padding: 1.5rem;
+          padding-top: 0;
+          margin-top: auto;
+          flex-shrink: 0;
+        }
+        
+        .add-tag-input-container {
+          display: flex;
+          background-color: rgba(255, 255, 255, 0.8);
+          border: 2px solid #E8C4A0;
+          border-radius: 25px;
+          padding: 0.25rem;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .add-tag-input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+          color: #202124;
+          outline: none;
+        }
+        
+        .add-tag-input::placeholder {
+          color: #8B7355;
+        }
+        
+        .add-tag-button {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background-color: #E86C2B;
+          color: white;
+          border: none;
+          font-size: 20px;
+          font-weight: 300;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 0.25rem;
+        }
+        
+        .add-tag-button:hover {
+          background-color: #d45a21;
+          transform: scale(1.05);
+        }
+
         .fab {
           position: fixed;
           bottom: 100px;
@@ -411,7 +496,7 @@ export default function TagsPage({
           box-shadow: 0 4px 12px rgba(232, 108, 43, 0.4);
           transition: all 0.2s ease;
           z-index: 1000;
-          display: flex;
+          display: none;
           align-items: center;
           justify-content: center;
         }
@@ -575,6 +660,17 @@ export default function TagsPage({
           background-color: #f29900;
         }
         
+        /* Desktop - show input, hide fab */
+        @media (min-width: 769px) {
+          .desktop-add-tag {
+            display: block;
+          }
+          
+          .fab {
+            display: none !important;
+          }
+        }
+
         /* Mobile-specific optimizations */
         @media (max-width: 768px) {
           .tags-container {
@@ -596,7 +692,12 @@ export default function TagsPage({
             margin-bottom: 1rem;
           }
           
+          .desktop-add-tag {
+            display: none;
+          }
+          
           .fab {
+            display: flex !important;
             bottom: 90px;
             right: 16px;
           }

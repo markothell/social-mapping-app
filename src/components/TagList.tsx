@@ -130,12 +130,14 @@ export default function TagList({
             onClick={() => setFilter('pending')}
             className={filter === 'pending' ? 'active' : ''}
           >
+            <span className="color-indicator pending-indicator"></span>
             Nominated
           </button>
           <button
             onClick={() => setFilter('approved')}
             className={filter === 'approved' ? 'active' : ''}
           >
+            <span className="color-indicator approved-indicator"></span>
             Approved
           </button>
         </div>
@@ -234,8 +236,25 @@ export default function TagList({
         }
         
         .filter-buttons button.active {
-          background-color: #F9AB00;
+          background-color: #D8CD9D;
           color: #202124;
+        }
+        
+        .color-indicator {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .pending-indicator {
+          background-color: #8B4513;
+        }
+        
+        .approved-indicator {
+          background-color: #F9AB00;
         }
         
         .tag-list {
