@@ -34,7 +34,7 @@ const tagColorMap = new Map<string, string>();
 
 /**
  * Gets a consistent color for a tag based on its ID
- * The same tag will always get the same color within a session
+ * The same tag will always get the same color across sessions
  * 
  * @param tagId The ID of the tag
  * @returns A color string (hex code)
@@ -45,8 +45,17 @@ export const getTagColor = (tagId: string): string => {
     return tagColorMap.get(tagId)!;
   }
   
-  // Get the current number of assigned colors to determine which one to use next
-  const colorIndex = tagColorMap.size % TAG_COLORS.length;
+  // Use a hash of the tagId to ensure consistent color assignment
+  // This ensures the same tag always gets the same color regardless of order
+  let hash = 0;
+  for (let i = 0; i < tagId.length; i++) {
+    const char = tagId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Use absolute value and modulo to get a valid color index
+  const colorIndex = Math.abs(hash) % TAG_COLORS.length;
   const color = TAG_COLORS[colorIndex];
   
   // Store the color assignment for future use

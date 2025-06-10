@@ -80,7 +80,7 @@ export default function MappingResultsVisualization({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [hoveredComment, setHoveredComment] = useState<{ tagId: string | null, userId: string | null, x?: number, y?: number }>({ tagId: null, userId: null });
   const [hoveredTag, setHoveredTag] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'statistics' | 'comments' | 'individual-mappings'>('statistics');
+  const [activeContentTab, setActiveContentTab] = useState<'map' | 'comments' | 'stats'>('map');
   
   // Use a ref to track if this is the first render
   const isFirstRender = useRef(true);
@@ -223,9 +223,15 @@ export default function MappingResultsVisualization({
   // Update active tab when selected tag changes - separate effect
   useEffect(() => {
     if (selectedTag) {
-      setActiveTab('comments'); // Change to show comments tab by default when a tag is selected
+      // Only switch to comments in individual view, not aggregate view
+      if (viewMode === 'individual') {
+        setActiveContentTab('comments');
+      }
+    } else {
+      // When tag is deselected, switch back to map view
+      setActiveContentTab('map');
     }
-  }, [selectedTag]);
+  }, [selectedTag, viewMode]);
   
   // Get tag statistics
   const getTagStats = () => {
@@ -369,125 +375,129 @@ export default function MappingResultsVisualization({
 
   return (
     <div className="mapping-results-visualization">
-      <div className="visualization-controls">
-        <div className="view-mode-selector">
-          <button 
-            className={viewMode === 'aggregate' ? 'active' : ''}
-            onClick={() => {
-              setViewMode('aggregate');
-              setSelectedTag(null); // Clear selected tag when switching to aggregate view
-            }}
-          >
-            Aggregate View
-          </button>
-          <button 
-            className={viewMode === 'individual' ? 'active' : ''}
-            onClick={() => {
-              setViewMode('individual');
-              setSelectedTag(null); // Clear selected tag when switching to individual view
-            }}
-          >
-            Individual View
-          </button>
-        </div>
-        
-        {viewMode === 'individual' && (
-          <div className="participant-selector">
-            <label htmlFor="participant-select">Select Participant:</label>
-            <select 
-              id="participant-select"
-              value={selectedParticipant || ''}
-              onChange={(e) => setSelectedParticipant(e.target.value)}
+      <div className="tab-navigation">
+        {/* First Line: View Type and Participant Selector */}
+        <div className="tab-navigation-row">
+          <div className="tab-button-group">
+            <button
+              className={`tab-button ${viewMode === 'aggregate' ? 'active' : ''}`}
+              onClick={() => {
+                setViewMode('aggregate');
+                setSelectedTag(null);
+              }}
             >
-              <option value="" disabled>Select a participant</option>
-              {(allMappings || mappings).map(mapping => (
-                <option key={mapping.userId} value={mapping.userId}>
-                  {mapping.userName}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        
-      </div>
-      
-      <div className="visualization-container">
-        <ResultsVisualizationGrid
-          settings={mappingSettings}
-          viewMode={viewMode}
-          positions={positions}
-          selectedTag={selectedTag}
-          hoveredComment={hoveredComment}
-          tags={tags}
-          mappings={mappings} // Pass the full mappings data
-          onSelectTag={(tagId) => {
-            // Only allow selecting tags in aggregate view
-            if (viewMode === 'aggregate') {
-              setSelectedTag(tagId === selectedTag ? null : tagId);
-            }
-          }}
-          onHoverTag={(hoverInfo) => {
-            setHoveredTag(hoverInfo);
-            
-            // Parse hover info to set hoveredComment for reverse highlighting
-            if (hoverInfo && hoverInfo.includes('-')) {
-              const parts = hoverInfo.split('-');
-              if (parts.length >= 3) {
-                // For individual view: tagId-x-y
-                if (viewMode === 'individual' && parts.length === 3) {
-                  const [tagId, x, y] = parts;
-                  setHoveredComment({ 
-                    tagId, 
-                    userId: selectedParticipant, 
-                    x: parseFloat(x), 
-                    y: parseFloat(y) 
-                  });
-                }
-                // For aggregate view: selectedTag-userId-x-y
-                else if (viewMode === 'aggregate' && parts.length >= 4) {
-                  const [tagId, userId, x, y] = parts;
-                  setHoveredComment({ 
-                    tagId, 
-                    userId, 
-                    x: parseFloat(x), 
-                    y: parseFloat(y) 
-                  });
-                }
-              }
-            } else if (!hoverInfo) {
-              // Clear hover when no longer hovering
-              setHoveredComment({ tagId: null, userId: null });
-            }
-          }}
-          participantName={viewMode === 'individual' ? 
-            (allMappings || mappings).find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
-        />
-        
-        <div className="tag-details-panel">
-          <div className="tab-controls">
-            <button 
-              className={activeTab === 'statistics' ? 'active' : ''}
-              onClick={() => setActiveTab('statistics')}
-            >
-              Statistics
+              Aggregate
             </button>
-            <button 
-              className={activeTab === 'comments' ? 'active' : ''}
-              onClick={() => setActiveTab('comments')}
+            <button
+              className={`tab-button ${viewMode === 'individual' ? 'active' : ''}`}
+              onClick={() => {
+                setViewMode('individual');
+                setSelectedTag(null);
+              }}
+            >
+              Individual
+            </button>
+          </div>
+
+          {/* Participant selector for individual view */}
+          {viewMode === 'individual' && (
+            <div className="participant-selector">
+              <select 
+                value={selectedParticipant || ''}
+                onChange={(e) => setSelectedParticipant(e.target.value)}
+              >
+                <option value="" disabled>Select participant</option>
+                {(allMappings || mappings).map(mapping => (
+                  <option key={mapping.userId} value={mapping.userId}>
+                    {mapping.userName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Second Line: Content Tabs */}
+        <div className="tab-navigation-row">
+          <div className="tab-button-group">
+            <button
+              className={`tab-button ${activeContentTab === 'map' ? 'active' : ''}`}
+              onClick={() => setActiveContentTab('map')}
+            >
+              Map
+            </button>
+            <button
+              className={`tab-button comments-tab ${activeContentTab === 'comments' ? 'active' : ''}`}
+              onClick={() => setActiveContentTab('comments')}
             >
               Comments
             </button>
+            <button
+              className={`tab-button ${activeContentTab === 'stats' ? 'active' : ''}`}
+              onClick={() => setActiveContentTab('stats')}
+            >
+              Stats
+            </button>
           </div>
-          
+        </div>
+      </div>
 
-          
-          {/* Comments Tab */}
-          {activeTab === 'comments' && (
-            <div className="comments-tab">
-              {selectedTag && tagStats ? (
-                <>
-                  <h4>Annotations for "{tagStats.tag.text}"</h4>
-                  
+      <div className="tab-content-container">
+        {/* Map Tab Content - Always show map, but make it visible through comments */}
+        <div className={`tab-content map-content ${activeContentTab === 'map' || activeContentTab === 'comments' ? 'active' : ''}`}>
+          <ResultsVisualizationGrid
+            settings={mappingSettings}
+            viewMode={viewMode}
+            positions={positions}
+            selectedTag={selectedTag}
+            hoveredComment={hoveredComment}
+            tags={tags}
+            mappings={mappings}
+            onSelectTag={(tagId) => {
+              if (viewMode === 'aggregate') {
+                setSelectedTag(tagId === selectedTag ? null : tagId);
+              }
+            }}
+            onHoverTag={(hoverInfo) => {
+              setHoveredTag(hoverInfo);
+              
+              if (hoverInfo && hoverInfo.includes('-')) {
+                const parts = hoverInfo.split('-');
+                if (parts.length >= 3) {
+                  if (viewMode === 'individual' && parts.length === 3) {
+                    const [tagId, x, y] = parts;
+                    setHoveredComment({ 
+                      tagId, 
+                      userId: selectedParticipant, 
+                      x: parseFloat(x), 
+                      y: parseFloat(y) 
+                    });
+                  } else if (viewMode === 'aggregate' && parts.length >= 4) {
+                    const [tagId, userId, x, y] = parts;
+                    setHoveredComment({ 
+                      tagId, 
+                      userId, 
+                      x: parseFloat(x), 
+                      y: parseFloat(y) 
+                    });
+                  }
+                }
+              } else if (!hoverInfo) {
+                setHoveredComment({ tagId: null, userId: null });
+              }
+            }}
+            participantName={viewMode === 'individual' ? 
+              (allMappings || mappings).find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
+          />
+        </div>
+
+        {/* Comments Tab Content */}
+        <div className={`tab-content comments-content ${activeContentTab === 'comments' ? 'active' : ''}`}>
+          <div className="comments-overlay">
+            {selectedTag && tagStats ? (
+              <>
+                <h4 className="comments-title">Comments for "{tagStats.tag.text}"</h4>
+                <div className="comments-scrollable">
                   {tagStats.annotations.length > 0 ? (
                     <div className="annotation-list">
                       {tagStats.annotations.map((annotation, idx) => {
@@ -522,16 +532,18 @@ export default function MappingResultsVisualization({
                   ) : (
                     <p className="no-annotations">No annotations available for this tag.</p>
                   )}
-                  
-                  <button onClick={() => setSelectedTag(null)} className="clear-selection">
-                    Clear Selection
-                  </button>
-                </>
-              ) : viewMode === 'individual' && selectedParticipant ? (
-                // Show all comments from this participant when in individual view
-                <>
-                  <h4>All Annotations from {(allMappings || mappings).find(m => m.userId === selectedParticipant)?.userName || 'Participant'}</h4>
-                  
+                </div>
+                <button onClick={() => {
+                  setSelectedTag(null);
+                  setActiveContentTab('map');
+                }} className="clear-selection">
+                  Clear Selection
+                </button>
+              </>
+            ) : viewMode === 'individual' && selectedParticipant ? (
+              <>
+                <h4 className="comments-title">Comments from {(allMappings || mappings).find(m => m.userId === selectedParticipant)?.userName || 'Participant'}</h4>
+                <div className="comments-scrollable">
                   {(() => {
                     const participantComments = getParticipantComments();
                     return participantComments.length > 0 ? (
@@ -565,27 +577,49 @@ export default function MappingResultsVisualization({
                       <p className="no-annotations">This participant has not added any annotations.</p>
                     );
                   })()}
-                </>
-              ) : (
+                </div>
+              </>
+            ) : (
+              <div className="comments-scrollable">
                 <p className="no-annotations">Select a tag to view annotations.</p>
-              )}
-            </div>
-          )}
-          
-          {/* Statistics Tab */}
-          {activeTab === 'statistics' && (
-            <div className="mapping-summary">
-              <h4>Overall Statistics</h4>
-              <ul>
-                <li>Total tags: {tags.length}</li>
-                <li>Total participants: {participants.length}</li>
-                <li>Completed mappings: {mappings.filter(m => m.isComplete).length}</li>
-                <li>Average tags mapped per participant: {mappings.length > 0 
-                  ? (mappings.reduce((sum, m) => sum + m.positions.length, 0) / mappings.length).toFixed(1) 
-                  : '0'}</li>
-              </ul>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Tab Content */}
+        <div className={`tab-content stats-content ${activeContentTab === 'stats' ? 'active' : ''}`}>
+          <div className="stats-display">
+            <h4>Overall Statistics</h4>
+            <ul>
+              <li>Total tags: {tags.length}</li>
+              <li>Total participants: {participants.length}</li>
+              <li>Completed mappings: {mappings.filter(m => m.isComplete).length}</li>
+              <li>Average tags mapped per participant: {mappings.length > 0 
+                ? (mappings.reduce((sum, m) => sum + m.positions.length, 0) / mappings.length).toFixed(1) 
+                : '0'}</li>
+            </ul>
+
+            {selectedTag && tagStats && (
+              <div className="tag-stats">
+                <h4>Statistics for "{tagStats.tag.text}"</h4>
+                <ul>
+                  <li>Mappings: {tagStats.mappingCount}</li>
+                  <li>Average position: ({(tagStats.averageX * 10 - 5).toFixed(1)}, {(tagStats.averageY * 10 - 5).toFixed(1)})</li>
+                  <li>Quadrant: {tagStats.quadrant}</li>
+                  <li>Consensus: {(tagStats.consensus * 100).toFixed(1)}%</li>
+                  <li>Standard deviation X: {tagStats.stdDevX.toFixed(2)}</li>
+                  <li>Standard deviation Y: {tagStats.stdDevY.toFixed(2)}</li>
+                </ul>
+                <button onClick={() => {
+                  setSelectedTag(null);
+                  setActiveContentTab('map');
+                }} className="clear-selection">
+                  Clear Selection
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
@@ -595,38 +629,71 @@ export default function MappingResultsVisualization({
           width: 100%;
           padding: 0;
           margin: 0;
-        }
-        
-        .visualization-controls {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-          flex-wrap: wrap;
-          gap: 1rem;
+          flex-direction: column;
+          min-height: 500px;
         }
-        
-        .view-mode-selector {
+
+        /* Tab navigation */
+        .tab-navigation {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          margin-bottom: 1.5rem;
+          flex-shrink: 0;
+        }
+
+        .tab-navigation-row {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .tab-button-group {
           display: flex;
           gap: 0.5rem;
+          background-color: #FDF0E1;
+          border: 1px solid #E8C4A0;
+          border-radius: 25px;
+          padding: 0.25rem;
+          align-items: center;
         }
-        
-        .view-mode-selector button {
-          background-color: #f1f3f4;
+
+        .tab-button {
+          flex: 1;
+          background: transparent;
           border: none;
-          border-radius: 4px;
           padding: 0.5rem 1rem;
+          border-radius: 20px;
           font-size: 0.9rem;
+          font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
+          color: #8B7355;
+          min-width: 80px;
         }
-        
-        .view-mode-selector button.active {
-          background-color: #e8f0fe;
-          color: #1a73e8;
-          font-weight: 500;
+
+        .tab-button.active {
+          background-color: #D8CD9D;
+          color: #202124;
         }
-        
+
+        .tab-button:not(.active):hover {
+          color: #202124;
+          background-color: rgba(216, 205, 157, 0.5);
+        }
+
+        .tab-button:focus {
+          outline: 2px solid #8B7355;
+          outline-offset: 2px;
+        }
+
+        .tab-button.comments-tab {
+          min-width: 100px;
+        }
+
         .participant-selector {
           display: flex;
           align-items: center;
@@ -637,55 +704,119 @@ export default function MappingResultsVisualization({
           padding: 0.4rem 0.8rem;
           border-radius: 4px;
           border: 1px solid #dadce0;
+          background-color: white;
+          font-size: 0.9rem;
         }
-        
-        
-        .visualization-container {
-          display: flex;
-          gap: 2rem;
-          flex-wrap: wrap;
-        }
-        
-        .tag-details-panel {
+
+        /* Tab content container - sized for map */
+        .tab-content-container {
           flex: 1;
-          min-width: 300px;
-        }
-        
-        .tab-controls {
           display: flex;
-          margin-bottom: 1rem;
-          border-bottom: 1px solid #dadce0;
+          flex-direction: column;
+          min-height: 700px;
+          position: relative;
         }
-        
-        .tab-controls button {
-          padding: 0.75rem 1.5rem;
-          background: transparent;
-          border: none;
-          border-bottom: 3px solid transparent;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          color: #5f6368;
+
+        .tab-content {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          opacity: 0;
+          visibility: hidden;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          transition: opacity 0.2s ease-in-out;
         }
-        
-        .tab-controls button.active {
-          color: #1a73e8;
-          border-bottom: 3px solid #1a73e8;
-          font-weight: 500;
+
+        .tab-content.active {
+          opacity: 1;
+          visibility: visible;
         }
-        
-        .individual-mappings-tab, .comments-tab {
-          background-color: #e8f0fe;
+
+        .tab-content.map-content {
+          z-index: 1;
+        }
+
+        .tab-content.comments-content {
+          z-index: 2;
+          pointer-events: none;
+        }
+
+        .tab-content.comments-content .comments-display {
+          pointer-events: all;
+        }
+
+        .tab-content.stats-content {
+          z-index: 3;
+        }
+
+        .comments-overlay {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 400px;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          pointer-events: all;
+          z-index: 2;
+        }
+
+        .comments-title {
+          background-color: rgba(248, 249, 250, 0.6375);
+          border: 2px solid #E8C4A0;
+          border-bottom: none;
+          border-top-left-radius: 8px;
+          border-top-right-radius: 8px;
+          padding: 1rem 1.5rem 0.5rem 1.5rem;
+          margin: 0;
+          font-size: 1.1rem;
+          color: #202124;
+          text-align: right;
+          flex-shrink: 0;
+        }
+
+        .comments-scrollable {
+          background-color: rgba(248, 249, 250, 0.6375);
+          border: 2px solid #E8C4A0;
+          border-top: none;
+          border-bottom-left-radius: 8px;
+          border-bottom-right-radius: 8px;
+          padding: 0.5rem 1.5rem 1.5rem 1.5rem;
+          flex: 1;
+          overflow-y: auto;
+          min-height: 0;
+        }
+
+        .stats-display {
+          background-color: #f8f9fa;
           border-radius: 8px;
-          padding: 1rem;
-          margin-bottom: 1.5rem;
+          padding: 1.5rem;
+          height: 100%;
+          flex: 1;
+          overflow-y: auto;
         }
-        
-        .individual-mappings-tab h4, .comments-tab h4 {
+
+        .comments-display h4, .stats-display h4 {
           margin-top: 0;
           margin-bottom: 0.75rem;
           font-size: 1.1rem;
+          color: #202124;
+        }
+
+        .tag-stats {
+          background-color: #e8f0fe;
+          border-radius: 8px;
+          padding: 1rem;
+          margin-top: 1rem;
+        }
+
+        .tag-stats h4 {
           color: #1a73e8;
+          margin-top: 0;
         }
         
         .individual-mappings-list {
@@ -741,10 +872,17 @@ export default function MappingResultsVisualization({
         
         .annotation-list {
           margin-top: 0.75rem;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
         }
         
         .annotation-wrapper {
           margin-bottom: 1rem;
+          max-width: 80%;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
         }
         
         .annotation-author-above {
@@ -752,17 +890,19 @@ export default function MappingResultsVisualization({
           font-weight: 600;
           color: #5f6368;
           margin-bottom: 0.25rem;
-          margin-left: 0.25rem;
+          margin-right: 0.25rem;
         }
         
         .annotation-item {
-          background-color: white;
+          background-color: rgba(248, 249, 250, 0.85);
           border-radius: 12px;
           padding: 0.75rem;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
           cursor: pointer;
           transition: background-color 0.2s;
-          margin-left: 0;
+          display: inline-block;
+          max-width: 100%;
+          word-wrap: break-word;
         }
         
         .annotation-item:hover {
@@ -830,36 +970,66 @@ export default function MappingResultsVisualization({
           background-color: #e8eaed;
         }
         
-        .mapping-summary {
-          background-color: #f8f9fa;
-          border-radius: 8px;
-          padding: 1rem;
-        }
-        
-        .mapping-summary h4 {
-          margin-top: 0;
-          margin-bottom: 0.5rem;
-          font-size: 1.1rem;
-        }
-        
-        .mapping-summary ul {
+        .stats-display ul {
           padding-left: 1.25rem;
           margin: 0.5rem 0;
         }
         
-        .mapping-summary li {
+        .stats-display li, .tag-stats li {
           margin-bottom: 0.3rem;
           font-size: 0.9rem;
         }
+
+        .tag-stats ul {
+          padding-left: 1.25rem;
+          margin: 0.5rem 0;
+        }
         
-        @media (max-width: 992px) {
-          .visualization-controls {
-            flex-direction: column;
-            align-items: flex-start;
+        @media (max-width: 768px) {
+          .tab-navigation {
+            gap: 0.5rem;
           }
           
-          .visualization-container {
-            flex-direction: column;
+          .tab-navigation-row {
+            justify-content: center;
+            gap: 1rem;
+          }
+          
+          .tab-button {
+            padding: 0.6rem 0.8rem;
+            font-size: 0.85rem;
+            min-width: 70px;
+          }
+
+          .tab-button.comments-tab {
+            min-width: 90px;
+          }
+
+          .participant-selector select {
+            font-size: 0.85rem;
+            padding: 0.35rem 0.6rem;
+          }
+          
+          .comments-overlay {
+            width: 100%;
+            position: relative;
+          }
+
+          .comments-title {
+            padding: 0.75rem 1rem 0.5rem 1rem;
+            text-align: right;
+          }
+
+          .comments-scrollable {
+            padding: 0.5rem 1rem 1rem 1rem;
+          }
+
+          .stats-display {
+            padding: 1rem;
+          }
+
+          .annotation-wrapper {
+            max-width: 90%;
           }
         }
         

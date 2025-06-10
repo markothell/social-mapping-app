@@ -181,6 +181,8 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
               <div
                 key={key}
                 className={`positioned-tag ${selectedTag === key ? 'selected' : ''} ${
+                  hoveredMapping === key ? 'hovered' : ''
+                } ${
                   viewMode === 'individual' && hoveredComment?.tagId === position.tagId && 
                   hoveredComment?.x === position.x && hoveredComment?.y === position.y ? 'hovered-comment' : ''
                 }`}
@@ -394,7 +396,8 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
         }
         
-        .positioned-tag:hover {
+        .positioned-tag:hover,
+        .positioned-tag.hovered {
           transform: translate(-50%, -50%) scale(1.1);
           box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
           z-index: 20;
