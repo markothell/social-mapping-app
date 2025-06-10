@@ -42,6 +42,7 @@ export default function MappingPage({
   const lastSavedMappings = useRef<any>({});
   const [activeTab, setActiveTab] = useState<'topics' | 'map' | 'context'>('topics');
   const [showInstructions, setShowInstructions] = useState(false);
+  const [tagFilter, setTagFilter] = useState<'all' | 'unmapped' | 'mapped'>('all');
   
   // Use the real-time activity hook
   const {
@@ -242,10 +243,11 @@ export default function MappingPage({
     if (!activity || !user) return;
     
     const tagText = approvedTags.find(tag => tag.id === tagId)?.text || '';
+    let newUserMappings = { ...userMappings };
     
     if (isAddingNewInstance && pendingInstanceKey) {
       // Position the pending placeholder instance
-      const newUserMappings = {
+      newUserMappings = {
         ...userMappings,
         [pendingInstanceKey]: { 
           ...userMappings[pendingInstanceKey],
@@ -271,7 +273,7 @@ export default function MappingPage({
       if (existingMappings.length > 0) {
         // Reposition the most recent instance
         const [lastPositionKey, lastMapping] = existingMappings[existingMappings.length - 1];
-        const newUserMappings = {
+        newUserMappings = {
           ...userMappings,
           [lastPositionKey]: { 
             ...lastMapping,
@@ -286,7 +288,7 @@ export default function MappingPage({
         const instanceId = `${tagId}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         const positionKey = `${tagId}_${instanceId}`;
         
-        const newUserMappings = {
+        newUserMappings = {
           ...userMappings,
           [positionKey]: { tagId, instanceId, x, y, annotation, text: tagText }
         };
@@ -304,12 +306,31 @@ export default function MappingPage({
       }
     }
     
+    // Check if this tag now has both position and context before auto-saving
+    const updatedMapping = Object.values(newUserMappings).find((mapping: any) => mapping.tagId === tagId);
+    if (updatedMapping && updatedMapping.annotation && updatedMapping.annotation.trim() !== '') {
+      // Auto-save to database only when both position and context exist
+      const positions = Object.values(newUserMappings).map((mapping: any) => ({
+        tagId: mapping.tagId,
+        instanceId: mapping.instanceId,
+        x: mapping.x,
+        y: mapping.y,
+        annotation: mapping.annotation
+      }));
+      
+      updateMapping(positions, false); // Auto-save without marking as complete
+      lastSavedMappings.current = { ...newUserMappings };
+      setHasUnsavedChanges(false);
+      
+      console.log('Tag positioned with context - auto-saved to database');
+    } else {
+      console.log('Tag positioned but no context yet - not saving to database');
+    }
+    
     // Don't clear selected tag when repositioning
     if (!isAddingNewInstance) {
       // Keep tag selected for repositioning
     }
-    
-    console.log('Tag positioned locally, not auto-submitting');
   };
   
   // Navigation functions that check for unsaved changes
@@ -486,24 +507,41 @@ export default function MappingPage({
         <div className="mapping-workspace">
           {/* Tab navigation */}
           <div className="tab-navigation">
-            <button
-              className={`tab-button ${activeTab === 'topics' ? 'active' : ''}`}
-              onClick={() => setActiveTab('topics')}
-            >
-              Topics
-            </button>
-            <button
-              className={`tab-button ${activeTab === 'map' ? 'active' : ''}`}
-              onClick={() => setActiveTab('map')}
-            >
-              Map
-            </button>
-            <button
-              className={`tab-button ${activeTab === 'context' ? 'active' : ''}`}
-              onClick={() => setActiveTab('context')}
-            >
-              Context
-            </button>
+            {/* Filter button - only show in topics tab */}
+            {activeTab === 'topics' && (
+              <button
+                className="filter-button"
+                onClick={() => {
+                  const nextFilter = tagFilter === 'all' ? 'unmapped' : 
+                                   tagFilter === 'unmapped' ? 'mapped' : 'all';
+                  setTagFilter(nextFilter);
+                }}
+              >
+                {tagFilter === 'all' ? 'All' : 
+                 tagFilter === 'unmapped' ? 'Unmapped' : 'Mapped'}
+              </button>
+            )}
+            
+            <div className="tab-button-group">
+              <button
+                className={`tab-button ${activeTab === 'topics' ? 'active' : ''}`}
+                onClick={() => setActiveTab('topics')}
+              >
+                Topics
+              </button>
+              <button
+                className={`tab-button ${activeTab === 'map' ? 'active' : ''}`}
+                onClick={() => setActiveTab('map')}
+              >
+                Map
+              </button>
+              <button
+                className={`tab-button ${activeTab === 'context' ? 'active' : ''}`}
+                onClick={() => setActiveTab('context')}
+              >
+                Context
+              </button>
+            </div>
           </div>
 
           {/* Tab content container */}
@@ -529,6 +567,8 @@ export default function MappingPage({
                 onSelectTag={activity.status === 'completed' ? () => {} : handleTagSelect}
                 onAddTagInstance={activity.status === 'completed' ? () => {} : handleAddTagInstance}
                 onRemoveTagInstance={activity.status === 'completed' ? () => {} : handleRemoveTagInstance}
+                onNavigateToMap={() => setActiveTab('map')}
+                filter={tagFilter}
                 disabled={activity.status === 'completed'}
               />
             </div>
@@ -542,6 +582,8 @@ export default function MappingPage({
                 userMappings={userMappings}
                 approvedTagIds={approvedTags.map(tag => tag.id)}
                 onPositionTag={activity.status === 'completed' ? () => {} : handleTagPosition}
+                onSelectTag={activity.status === 'completed' ? () => {} : handleTagSelect}
+                onNavigateToContext={activity.status === 'completed' ? undefined : () => setActiveTab('context')}
                 disabled={activity.status === 'completed'}
               />
             </div>
@@ -576,6 +618,28 @@ export default function MappingPage({
                             }
                           };
                           setUserMappings(newUserMappings);
+                          
+                          // Check if this tag now has both position and context before auto-saving
+                          const updatedMapping = newUserMappings[lastPositionKey];
+                          if (updatedMapping && updatedMapping.x !== undefined && updatedMapping.y !== undefined && 
+                              updatedMapping.annotation && updatedMapping.annotation.trim() !== '') {
+                            // Auto-save to database only when both position and context exist
+                            const positions = Object.values(newUserMappings).map((mapping: any) => ({
+                              tagId: mapping.tagId,
+                              instanceId: mapping.instanceId,
+                              x: mapping.x,
+                              y: mapping.y,
+                              annotation: mapping.annotation
+                            }));
+                            
+                            updateMapping(positions, false); // Auto-save without marking as complete
+                            lastSavedMappings.current = { ...newUserMappings };
+                            setHasUnsavedChanges(false);
+                            
+                            console.log('Context added to positioned tag - auto-saved to database');
+                          } else {
+                            console.log('Context updated but tag not fully positioned - not saving to database');
+                          }
                           
                           // Deselect the current tag after updating context
                           setSelectedTag(null);
@@ -734,41 +798,72 @@ export default function MappingPage({
         .tab-navigation {
           display: flex;
           justify-content: center;
-          gap: 0;
+          align-items: center;
+          gap: 0.5rem;
           margin-bottom: 1.5rem;
-          background-color: rgba(255, 255, 255, 0.8);
-          border: 2px solid #E8C4A0;
+          flex-shrink: 0;
+        }
+
+        .filter-button {
+          background-color: #D8CD9D;
+          color: #202124;
+          border: none;
+          border-radius: 20px;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          width: 100px;
+          margin-right: 0.5rem;
+          text-align: center;
+        }
+
+        .filter-button:hover {
+          background-color: rgba(216, 205, 157, 0.8);
+        }
+
+        .filter-button:focus {
+          outline: 2px solid #8B7355;
+          outline-offset: 2px;
+        }
+
+        .tab-button-group {
+          display: flex;
+          gap: 0.5rem;
+          background-color: #FDF0E1;
+          border: 1px solid #E8C4A0;
           border-radius: 25px;
           padding: 0.25rem;
           align-items: center;
-          max-width: 320px;
-          margin-left: auto;
-          margin-right: auto;
-          flex-shrink: 0;
         }
 
         .tab-button {
           flex: 1;
           background: transparent;
           border: none;
-          padding: 0.75rem 1rem;
+          padding: 0.5rem 1rem;
           border-radius: 20px;
           font-size: 0.9rem;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s;
           color: #8B7355;
         }
 
         .tab-button.active {
-          background-color: #E86C2B;
-          color: white;
-          box-shadow: 0 2px 8px rgba(232, 108, 43, 0.3);
+          background-color: #D8CD9D;
+          color: #202124;
         }
 
         .tab-button:not(.active):hover {
           color: #202124;
-          background-color: rgba(232, 108, 43, 0.1);
+          background-color: rgba(216, 205, 157, 0.5);
+        }
+
+        .tab-button:focus {
+          outline: 2px solid #8B7355;
+          outline-offset: 2px;
         }
 
         /* Tab content container */
@@ -983,8 +1078,20 @@ export default function MappingPage({
           }
           
           .tab-navigation {
-            max-width: 280px;
+            gap: 0.25rem;
             margin-bottom: 1rem;
+          }
+          
+          .filter-button {
+            width: 100px;
+            margin-right: 0.25rem;
+            font-size: 0.8rem;
+            padding: 0.5rem 0.5rem;
+          }
+          
+          .tab-button-group {
+            flex: 1;
+            max-width: none;
           }
           
           .tab-button {

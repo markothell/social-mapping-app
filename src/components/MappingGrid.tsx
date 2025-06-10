@@ -40,6 +40,9 @@ interface MappingGridProps {
   userMappings: Record<string, Position>;
   approvedTagIds: string[];
   onPositionTag: (tagId: string, x: number, y: number, annotation?: string) => void;
+  onSelectTag?: (tagId: string | null, instanceId?: string | null) => void;
+  onNavigateToContext?: () => void;
+  disabled?: boolean;
 }
 
 export default function MappingGrid({
@@ -48,12 +51,17 @@ export default function MappingGrid({
   selectedInstanceId,
   userMappings,
   approvedTagIds,
-  onPositionTag
+  onPositionTag,
+  onSelectTag,
+  onNavigateToContext,
+  disabled = false
 }: MappingGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   
   // Handle grid click
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    
     if (!selectedTag || !gridRef.current) return;
     
     const rect = gridRef.current.getBoundingClientRect();
@@ -68,6 +76,37 @@ export default function MappingGrid({
     
     // Always position tag directly - context will be added in the persistent context box
     onPositionTag(selectedTag.id, clampedX, clampedY);
+  };
+
+  // Handle tag click for selection/deselection
+  const handleTagClick = (e: React.MouseEvent, tagId: string, instanceId?: string) => {
+    e.stopPropagation(); // Prevent grid click
+    
+    if (disabled || !onSelectTag) return;
+    
+    // If this tag/instance is already selected, deselect it
+    const isCurrentlySelected = selectedInstanceId 
+      ? instanceId === selectedInstanceId
+      : selectedTag?.id === tagId;
+    
+    if (isCurrentlySelected) {
+      onSelectTag(null, null); // Deselect
+    } else {
+      // Only allow selection if no tag is currently selected
+      if (!selectedTag) {
+        onSelectTag(tagId, instanceId); // Select this tag/instance
+      }
+      // If another tag is selected, do nothing (prevent selection)
+    }
+  };
+
+  // Handle arrow click for navigation to context
+  const handleArrowClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent tag click and grid click
+    
+    if (disabled || !onNavigateToContext) return;
+    
+    onNavigateToContext();
   };
   
   
@@ -143,26 +182,41 @@ export default function MappingGrid({
                   : displayText;
                 
                 return (
-                  <div
-                    key={positionKey}
-                    className={`positioned-tag ${isSelected ? 'selected' : ''}`}
-                    style={{
-                      left: `${position.x * 100}%`,
-                      top: `${(1 - position.y) * 100}%`,
-                      transform: 'translate(-50%, -50%)',
-                      border: `2px solid ${tagColor}`,
-                      backgroundColor: `${tagColor}40` // 40 = 25% opacity
-                    }}
-                    title={displayText} // Show full text on hover
-                  >
-                    <div 
-                      className="tag-content"
-                      style={{ fontSize: `${fontSize}rem` }}
+                  <div key={positionKey}>
+                    <div
+                      className={`positioned-tag ${isSelected ? 'selected' : ''}`}
+                      style={{
+                        left: `${position.x * 100}%`,
+                        top: `${(1 - position.y) * 100}%`,
+                        border: `2px solid ${tagColor}`,
+                        backgroundColor: `${tagColor}40` // 40 = 25% opacity
+                      }}
+                      onClick={(e) => handleTagClick(e, position.tagId, position.instanceId)}
                     >
-                      {position.annotation && (
-                        <div className="tag-annotation-indicator" title={position.annotation}>i</div>
-                      )}
+                      <div 
+                        className="tag-content"
+                        style={{ fontSize: `${fontSize}rem` }}
+                      >
+                        {position.annotation && (
+                          <div className="tag-annotation-indicator" title={position.annotation}>i</div>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* Floating amber arrow for selected tag */}
+                    {isSelected && onNavigateToContext && (
+                      <div
+                        className="floating-arrow"
+                        style={{
+                          left: `${position.x * 100}%`,
+                          top: `${(1 - position.y) * 100}%`,
+                        }}
+                        onClick={handleArrowClick}
+                        title="Go to context input"
+                      >
+                        →
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -305,21 +359,48 @@ export default function MappingGrid({
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 100; /* Increased z-index to ensure tags appear above other elements */
+          z-index: 100;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          pointer-events: auto; /* Ensure tags can be clicked */
+          pointer-events: auto;
           overflow: hidden;
           padding: 0;
           box-sizing: border-box;
           width: 2.5rem;
           height: 2.5rem;
           transition: all 0.2s ease;
+          cursor: pointer;
         }
         
         .positioned-tag.selected {
           z-index: 101;
           box-shadow: 0 0 0 3px #1a73e8, 0 4px 8px rgba(0, 0, 0, 0.2);
           transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .floating-arrow {
+          position: absolute;
+          transform: translate(-50%, -50%) translateX(1.5rem);
+          background-color: #F9AB00;
+          color: #202124;
+          border: none;
+          border-radius: 50%;
+          width: 2rem;
+          height: 2rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+          font-weight: bold;
+          cursor: pointer;
+          z-index: 102;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+          transition: all 0.2s ease;
+          pointer-events: auto;
+        }
+
+        .floating-arrow:hover {
+          background-color: #f29900;
+          transform: translate(-50%, -50%) translateX(1.5rem) scale(1.1);
         }
         
         /* Ensure the mapping grid has position relative for absolute positioning context */

@@ -27,6 +27,9 @@ interface TagSelectionPanelProps {
   onSelectTag: (tagId: string | null, instanceId?: string | null) => void;
   onAddTagInstance?: (tagId: string) => void;
   onRemoveTagInstance?: (tagId: string, instanceId?: string) => void;
+  onNavigateToMap?: () => void;
+  filter?: 'all' | 'unmapped' | 'mapped';
+  disabled?: boolean;
 }
 
 export default function TagSelectionPanel({
@@ -36,9 +39,11 @@ export default function TagSelectionPanel({
   selectedInstanceId,
   onSelectTag,
   onAddTagInstance,
-  onRemoveTagInstance
+  onRemoveTagInstance,
+  onNavigateToMap,
+  filter = 'all',
+  disabled = false
 }: TagSelectionPanelProps) {
-  const [filter, setFilter] = useState<'all' | 'unmapped' | 'mapped'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -108,30 +113,6 @@ export default function TagSelectionPanel({
 
   return (
     <div className="tag-selection-panel">
-      <div className="panel-header">
-        <div className="filter-controls">
-          <button
-            onClick={() => setFilter('all')}
-            className={filter === 'all' ? 'active' : ''}
-          >
-            All ({tags.length})
-          </button>
-          <button
-            onClick={() => setFilter('unmapped')}
-            className={`unmapped-filter ${filter === 'unmapped' ? 'active' : ''}`}
-          >
-            <span className="unmapped-indicator-dot"></span>
-            Unmapped ({unmappedCount})
-          </button>
-          <button
-            onClick={() => setFilter('mapped')}
-            className={`mapped-filter ${filter === 'mapped' ? 'active' : ''}`}
-          >
-            <span className="mapped-indicator-dot"></span>
-            Mapped ({mappedCount})
-          </button>
-        </div>
-      </div>
       
       {filteredItems.length === 0 ? (
         <div className="no-tags">
@@ -149,19 +130,32 @@ export default function TagSelectionPanel({
               <div key={item.id} className={`tag-item-container ${item.isMapped ? 'mapped' : ''}`}>
                 <div
                   className={`tag-item ${item.isMapped ? 'mapped' : ''} ${isSelected ? 'selected' : ''}`}
-                  onClick={() => onSelectTag(
+                  onClick={() => disabled ? null : onSelectTag(
                     isSelected ? null : item.tagId, 
                     isSelected ? null : (item.isMapped ? item.instanceId : null)
                   )}
                   style={{ 
-                    borderLeft: `4px solid ${tagColor}`,
-                    borderRight: `4px solid ${tagColor}`
+                    border: `2px solid ${tagColor}`
                   }}
                 >
                   <div className="tag-content">
                     <div className="tag-text">{item.text}</div>
                   </div>
                 </div>
+                
+                {/* Map link for selected tags */}
+                {isSelected && onNavigateToMap && (
+                  <button
+                    className="map-link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigateToMap();
+                    }}
+                    title="Go to map to position this tag"
+                  >
+                    Map →
+                  </button>
+                )}
                 
                 {item.isMapped && onAddTagInstance && onRemoveTagInstance && (
                   <div className="tag-menu">
@@ -181,17 +175,17 @@ export default function TagSelectionPanel({
                           className="menu-item add-item"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onAddTagInstance(item.tagId);
+                            if (!disabled) onAddTagInstance(item.tagId);
                             setOpenMenuId(null);
                           }}
                         >
-                          Add
+                          Add another
                         </button>
                         <button
                           className="menu-item remove-item"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onRemoveTagInstance(item.tagId, item.instanceId);
+                            if (!disabled) onRemoveTagInstance(item.tagId, item.instanceId);
                             setOpenMenuId(null);
                           }}
                         >
@@ -209,7 +203,7 @@ export default function TagSelectionPanel({
 
       <div className="helper-text">
         {selectedTag ? (
-          <p>Click on the grid to position the selected tag, or click the tag again to deselect</p>
+          <p>Click <strong>Map</strong> to position the selected tag, or click the tag again to deselect</p>
         ) : (
           <p>Select a tag to position it on the grid</p>
         )}
@@ -218,91 +212,46 @@ export default function TagSelectionPanel({
       <style jsx>{`
         .tag-selection-panel {
           width: 100%;
-          background-color: #f8f9fa;
+          background-color: transparent;
           border-radius: 8px;
-          padding: 1.25rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          padding: 0;
           display: flex;
           flex-direction: column;
           height: 100%;
           overflow: hidden;
         }
         
-        .panel-header {
-          margin-bottom: 1rem;
-          flex-shrink: 0;
-        }
-        
-        .filter-controls {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 1rem;
-        }
-        
-        .filter-controls button {
-          background-color: white;
-          border: 1px solid #dadce0;
-          border-radius: 4px;
-          padding: 0.4rem 0.25rem;
-          font-size: 0.75rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          flex: 1;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        
-        .filter-controls button.active {
-          background-color: #e8f0fe;
-          color: #1a73e8;
-          border-color: #1a73e8;
-          font-weight: 500;
-        }
-        
-        .unmapped-filter.active {
-          background-color: white !important;
-          color: #202124 !important;
-          border-color: #dadce0 !important;
-        }
-        
-        .mapped-filter.active {
-          background-color: #f5f5f5 !important;
-          color: #202124 !important;
-          border-color: #dadce0 !important;
-        }
-        
-        .unmapped-indicator-dot {
-          display: inline-block;
-          width: 8px;
-          height: 8px;
-          background-color: white;
-          border-radius: 50%;
-          margin-right: 0.5rem;
-          border: 1px solid #dadce0;
-        }
-        
-        .mapped-indicator-dot {
-          display: inline-block;
-          width: 8px;
-          height: 8px;
-          background-color: #f5f5f5;
-          border-radius: 50%;
-          margin-right: 0.5rem;
-          border: 1px solid #dadce0;
-        }
         
         .tag-list {
           flex-grow: 1;
           overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          padding-right: 0.25rem;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0;
+          padding: 0.25rem;
+        }
+        
+        @media (min-width: 768px) {
+          .tag-list {
+            grid-template-columns: 1fr 1fr;
+            column-gap: 2rem;
+            row-gap: 0;
+          }
         }
         
         .tag-item-container {
           position: relative;
+          display: grid;
+          grid-template-columns: 1fr auto auto;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.5rem 0.25rem;
+          border-bottom: 1px solid #E8C4A0;
+          margin: 0.125rem 0;
+        }
+        
+        .tag-item-container:last-child {
+          border-bottom: none;
         }
 
         /* Custom scrollbar */
@@ -325,31 +274,50 @@ export default function TagSelectionPanel({
         }
         
         .tag-item {
-          background-color: white;
-          border-radius: 6px;
-          padding: 0.5rem 0.75rem;
+          display: inline-flex;
+          align-items: center;
+          padding: 0.5rem 1rem;
+          border-radius: 25px;
+          font-size: 0.9rem;
           cursor: pointer;
-          border: 1px solid #dadce0;
           transition: all 0.2s;
           position: relative;
           overflow: hidden;
-          min-height: 40px;
           flex-shrink: 0;
+          max-width: fit-content;
+          border: none;
+        }
+        
+        .tag-item:not(.mapped) {
+          background-color: #F7E9CB;
+          color: #202124;
         }
         
         .tag-item.mapped {
-          background-color: #f5f5f5;
-        }
-        
-        .tag-item:hover {
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-          border-color: #bbb;
+          background-color: #D8CD9D;
+          color: #202124;
         }
         
         .tag-menu {
-          position: absolute;
-          top: 0.5rem;
-          right: 0.75rem;
+          position: relative;
+        }
+        
+        .map-link {
+          background-color: #F9AB00;
+          color: #202124;
+          border: none;
+          border-radius: 15px;
+          padding: 0.25rem 0.75rem;
+          font-size: 0.8rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+        
+        .map-link:hover {
+          background-color: #f29900;
+          transform: scale(1.05);
         }
         
         .menu-button {
@@ -406,22 +374,20 @@ export default function TagSelectionPanel({
         }
         
         .tag-item.selected {
-          border-color: #1a73e8;
-          box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
-          background-color: #e8f0fe;
+          box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+          transform: scale(1.02);
         }
         
         .tag-content {
           display: flex;
           align-items: center;
           flex: 1;
-          padding-right: 2rem;
         }
         
         .tag-text {
-          font-size: 0.95rem;
+          font-size: 0.9rem;
           margin-bottom: 0;
-          color: #202124;
+          font-weight: 500;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
