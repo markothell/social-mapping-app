@@ -377,6 +377,18 @@ export function useRealTimeActivity(activityId: string, user: any) {
           });
         }
         
+        // Ensure user is added to participants if not already present
+        const existingParticipant = current.participants.find(p => p.id === user.id);
+        if (!existingParticipant) {
+          current.participants.push({
+            id: user.id,
+            name: user.name,
+            userName: user.name,
+            isConnected: true,
+            joinedAt: new Date()
+          });
+        }
+        
         current.updatedAt = new Date();
         return current;
       });

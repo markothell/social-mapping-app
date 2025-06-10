@@ -65,13 +65,15 @@ interface MappingResultsVisualizationProps {
   tags: Tag[];
   mappings: Mapping[];
   participants: Participant[];
+  allMappings?: Mapping[]; // All mappings including incomplete ones for participant dropdown
 }
 
 export default function MappingResultsVisualization({
   settings,
   tags,
   mappings,
-  participants
+  participants,
+  allMappings
 }: MappingResultsVisualizationProps) {
   const [viewMode, setViewMode] = useState<'aggregate' | 'individual'>('aggregate');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
@@ -166,7 +168,7 @@ export default function MappingResultsVisualization({
       // Individual participant's positions
       if (!selectedParticipant) return {};
       
-      const mapping = mappings.find(m => m.userId === selectedParticipant);
+      const mapping = (allMappings || mappings).find(m => m.userId === selectedParticipant);
       if (!mapping) return {};
       
       // Filter to only approved tags
@@ -204,10 +206,11 @@ export default function MappingResultsVisualization({
     }
     
     // Auto-select first participant if individual view is selected and none is selected
-    if (viewMode === 'individual' && !selectedParticipant && mappings.length > 0) {
-      setSelectedParticipant(mappings[0].userId);
+    const availableMappings = allMappings || mappings;
+    if (viewMode === 'individual' && !selectedParticipant && availableMappings.length > 0) {
+      setSelectedParticipant(availableMappings[0].userId);
     }
-  }, [viewMode, selectedParticipant, mappings]);
+  }, [viewMode, selectedParticipant, mappings, allMappings]);
   
   // Function to handle clicking on a comment - switches to individual view for that user and clears tag selection
   const handleCommentClick = (userId: string) => {
@@ -341,7 +344,7 @@ export default function MappingResultsVisualization({
   const getParticipantComments = () => {
     if (viewMode !== 'individual' || !selectedParticipant) return [];
     
-    const mapping = mappings.find(m => m.userId === selectedParticipant);
+    const mapping = (allMappings || mappings).find(m => m.userId === selectedParticipant);
     if (!mapping) return [];
     
     // Filter to only approved tags
@@ -397,7 +400,7 @@ export default function MappingResultsVisualization({
               onChange={(e) => setSelectedParticipant(e.target.value)}
             >
               <option value="" disabled>Select a participant</option>
-              {mappings.map(mapping => (
+              {(allMappings || mappings).map(mapping => (
                 <option key={mapping.userId} value={mapping.userId}>
                   {mapping.userName}
                 </option>
@@ -457,7 +460,7 @@ export default function MappingResultsVisualization({
             }
           }}
           participantName={viewMode === 'individual' ? 
-            mappings.find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
+            (allMappings || mappings).find(m => m.userId === selectedParticipant)?.userName || 'Unknown' : undefined}
         />
         
         <div className="tag-details-panel">
@@ -527,7 +530,7 @@ export default function MappingResultsVisualization({
               ) : viewMode === 'individual' && selectedParticipant ? (
                 // Show all comments from this participant when in individual view
                 <>
-                  <h4>All Annotations from {mappings.find(m => m.userId === selectedParticipant)?.userName || 'Participant'}</h4>
+                  <h4>All Annotations from {(allMappings || mappings).find(m => m.userId === selectedParticipant)?.userName || 'Participant'}</h4>
                   
                   {(() => {
                     const participantComments = getParticipantComments();

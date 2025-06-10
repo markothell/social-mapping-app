@@ -148,6 +148,7 @@ export default function MappingResultsPage({
             tags={approvedTags}
             mappings={completedMappings}
             participants={activity.participants}
+            allMappings={activity.mappings}
           />
         ) : (
           <div className="no-data-message">
