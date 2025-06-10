@@ -29,6 +29,7 @@ export default function MappingResultsPage({
   
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   // Use the real-time activity hook
   const {
@@ -116,17 +117,32 @@ export default function MappingResultsPage({
         currentUserId={user?.id}
       />
       
-      <div className="results-header">
-        <h1 className="core-question">Results</h1>
-        
-        <div className="results-instructions">
-          <p>
-            {activity.settings?.results?.instruction || 'Review the collective mapping to understand different perspectives and insights.'}
-          </p>
+      <div className="results-container">
+        <div className="results-header">
+          <div className="core-question-container">
+            <h1 className="core-question">Results</h1>
+            {(activity.settings?.results?.instruction || activity.settings?.mapping?.instruction) && (
+              <button 
+                className="info-toggle"
+                onClick={() => setShowInstructions(!showInstructions)}
+                aria-label="Toggle instructions"
+              >
+                ℹ️
+              </button>
+            )}
+          </div>
+          
+          {/* Hidden instruction bubble - contains all details */}
+          {showInstructions && (
+            <div className="instruction-details">
+              <p className="instruction-text">
+                {activity.settings?.results?.instruction || 'Review the collective mapping to understand different perspectives and insights.'}
+              </p>
+            </div>
+          )}
         </div>
-      </div>
-      
-      {hasEnoughData ? (
+
+        {hasEnoughData ? (
           <MappingResultsVisualization
             settings={activity.settings.mapping}
             tags={approvedTags}
@@ -151,13 +167,6 @@ export default function MappingResultsPage({
             )}
           </div>
         )}
-
-        <ConnectionStatus 
-          status={{ 
-            isConnected: isConnected, 
-            error: connectionError 
-          }} 
-        />
 
         {isAdmin && (
           <div className="admin-controls">
@@ -188,59 +197,104 @@ export default function MappingResultsPage({
             </div>
           </div>
         )}
+      </div>
 
-        <div className="navigation-controls">
-          <button
-            onClick={() => router.push(`/activity/${activity.id}/mapping`)}
-            className="secondary-button"
-          >
-            Back to Mapping
-          </button>
-          
-          <button
-            onClick={() => router.push(`/activity/${activity.id}`)}
-            className="secondary-button"
-          >
-            Back to Activity
-          </button>
-          
-          {isAdmin && (
-            <button
-              onClick={() => router.push('/admin')}
-              className="primary-button"
-            >
-              Admin Dashboard
-            </button>
-          )}
-        </div>
+      <ConnectionStatus 
+        status={{ 
+          isConnected: isConnected, 
+          error: connectionError 
+        }} 
+      />
 
       <style jsx>{`
         .mapping-results-page {
           color: #202124;
+          padding-bottom: 1rem;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
         }
         
+        .results-container {
+          background-color: #FDF6E9;
+          border-radius: 12px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          padding: 1.5rem;
+          margin: 0.5rem auto;
+          margin-bottom: 1rem;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          min-height: 0;
+          max-width: 800px;
+          width: 100%;
+        }
         
         .results-header {
-          margin: 0 1rem 1rem 1rem;
-          padding: 2rem;
+          margin-bottom: 1.5rem;
           text-align: center;
-          background: transparent;
+          flex-shrink: 0;
+        }
+        
+        .core-question-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
         }
         
         .core-question {
-          margin-top: 0;
-          margin-bottom: 0.5rem;
-          font-size: 2.2rem;
+          margin: 0;
+          font-size: 1.8rem;
           color: #202124;
           font-weight: 600;
+          line-height: 1.2;
         }
-        
-        .results-instructions {
-          margin-bottom: 1.5rem;
-          color: #5f6368;
-          max-width: 700px;
-          margin-left: auto;
-          margin-right: auto;
+
+        .info-toggle {
+          background: none;
+          border: none;
+          font-size: 1rem;
+          cursor: pointer;
+          padding: 0.25rem;
+          border-radius: 50%;
+          transition: background-color 0.2s;
+        }
+
+        .info-toggle:hover {
+          background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .instruction-details {
+          background-color: rgba(255, 255, 255, 0.9);
+          border: 1px solid #E8C4A0;
+          border-radius: 12px;
+          padding: 1.25rem;
+          margin-top: 1rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          animation: slideDown 0.2s ease-out;
+          position: relative;
+        }
+
+        .instruction-text {
+          margin: 0;
+          font-size: 1rem;
+          color: #202124;
+          line-height: 1.4;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         
         
@@ -312,14 +366,6 @@ export default function MappingResultsPage({
           to { transform: rotate(360deg); }
         }
         
-        .navigation-controls {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 2rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid #eee;
-          gap: 1rem;
-        }
         
         .secondary-button {
           background-color: #f1f3f4;
@@ -369,15 +415,47 @@ export default function MappingResultsPage({
         
         @media (max-width: 768px) {
           .mapping-results-page {
-            padding: 1rem;
+            padding-bottom: 90px;
           }
           
           .results-container {
-            padding: 1.5rem;
+            border-radius: 0;
+            margin: 0;
+            padding: 1rem;
           }
           
-          .navigation-controls {
-            display: none;
+          .results-header {
+            margin-bottom: 1rem;
+          }
+          
+          .core-question-container {
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+          }
+          
+          .core-question {
+            font-size: 1.4rem;
+          }
+          
+          .info-toggle {
+            font-size: 0.9rem;
+            padding: 0.2rem;
+          }
+          
+        }
+        
+        /* Very small screens */
+        @media (max-width: 480px) {
+          .core-question-container {
+            gap: 0.4rem;
+          }
+          
+          .core-question {
+            font-size: 1.2rem;
+          }
+          
+          .info-toggle {
+            font-size: 0.8rem;
           }
         }
       `}</style>

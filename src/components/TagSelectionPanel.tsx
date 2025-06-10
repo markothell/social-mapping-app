@@ -109,27 +109,6 @@ export default function TagSelectionPanel({
   return (
     <div className="tag-selection-panel">
       <div className="panel-header">
-        <h2>Tags</h2>
-        
-        <div className="search-container">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search tags..."
-            className="search-input"
-          />
-          {searchTerm && (
-            <button 
-              className="clear-search" 
-              onClick={() => setSearchTerm('')}
-              aria-label="Clear search"
-            >
-              ×
-            </button>
-          )}
-        </div>
-        
         <div className="filter-controls">
           <button
             onClick={() => setFilter('all')}
@@ -238,56 +217,20 @@ export default function TagSelectionPanel({
 
       <style jsx>{`
         .tag-selection-panel {
-          width: 300px;
+          width: 100%;
           background-color: #f8f9fa;
           border-radius: 8px;
           padding: 1.25rem;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           display: flex;
           flex-direction: column;
-          height: calc(600px + 250px + 2rem);
+          height: 100%;
+          overflow: hidden;
         }
         
         .panel-header {
           margin-bottom: 1rem;
-        }
-        
-        .panel-header h2 {
-          margin-top: 0;
-          margin-bottom: 0.75rem;
-          font-size: 1.2rem;
-          color: #202124;
-        }
-        
-        .search-container {
-          position: relative;
-          margin-bottom: 1rem;
-        }
-        
-        .search-input {
-          width: 100%;
-          padding: 0.5rem;
-          border: 1px solid #dadce0;
-          border-radius: 4px;
-          font-size: 0.9rem;
-        }
-        
-        .clear-search {
-          position: absolute;
-          right: 8px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-size: 1.2rem;
-          color: #5f6368;
-          padding: 0;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          flex-shrink: 0;
         }
         
         .filter-controls {
@@ -521,12 +464,9 @@ export default function TagSelectionPanel({
           margin: 0;
         }
         
-        @media (max-width: 992px) {
+        @media (max-width: 768px) {
           .tag-selection-panel {
-            width: 100%;
-            height: auto;
-            max-height: 300px;
-            margin-bottom: 1.5rem;
+            padding: 1rem;
           }
           
           .helper-text {

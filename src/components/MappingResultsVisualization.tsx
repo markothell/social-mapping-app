@@ -590,12 +590,8 @@ export default function MappingResultsVisualization({
       <style jsx>{`
         .mapping-results-visualization {
           width: 100%;
-          max-width: 1200px;
-          margin: 1rem auto;
-          background-color: #FDF6E9;
-          border-radius: 12px;
-          padding: 2rem;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          padding: 0;
+          margin: 0;
         }
         
         .visualization-controls {

@@ -178,29 +178,28 @@ export default function TagsPage({
       
       <div className="tags-container">
         <div className="tags-header">
-          <h1 className="core-question">{activity.settings.tagCreation?.coreQuestion || 'What topics should we explore?'}</h1>
-          
-          {/* Collapsible instructions */}
-          <div className="instruction-section">
-            <p className="instruction-preview">
-              {activity.settings.tagCreation?.instruction || 'Add tags for the activity'}
-              {getVotingInstruction() && (
-                <button 
-                  className="info-toggle"
-                  onClick={() => setShowInstructions(!showInstructions)}
-                  aria-label="Toggle instructions"
-                >
-                  ℹ️
-                </button>
-              )}
-            </p>
-            
-            {showInstructions && getVotingInstruction() && (
-              <div className="instruction-details">
-                {getVotingInstruction()}
-              </div>
+          <div className="core-question-container">
+            <h1 className="core-question">{activity.settings.tagCreation?.coreQuestion || 'What topics should we explore?'}</h1>
+            {(activity.settings.tagCreation?.instruction || getVotingInstruction()) && (
+              <button 
+                className="info-toggle"
+                onClick={() => setShowInstructions(!showInstructions)}
+                aria-label="Toggle instructions"
+              >
+                ℹ️
+              </button>
             )}
           </div>
+          
+          {/* Hidden instruction bubble - contains all details */}
+          {showInstructions && (
+            <div className="instruction-details">
+              <p className="instruction-text">
+                {activity.settings.tagCreation?.instruction || 'Add tags for the activity'}
+                {getVotingInstruction()}
+              </p>
+            </div>
+          )}
         </div>
 
         {activity.status === 'completed' && (
@@ -339,13 +338,15 @@ export default function TagsPage({
           border-radius: 12px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
           padding: 1.5rem;
-          margin: 0.5rem;
+          margin: 0.5rem auto;
           margin-bottom: 1rem;
           flex: 1;
           display: flex;
           flex-direction: column;
           overflow: hidden;
           min-height: 0;
+          max-width: 800px;
+          width: 100%;
         }
         
         .content-area {
@@ -362,27 +363,20 @@ export default function TagsPage({
           flex-shrink: 0;
         }
         
-        .core-question {
-          margin-top: 0;
+        .core-question-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
           margin-bottom: 0.75rem;
+        }
+        
+        .core-question {
+          margin: 0;
           font-size: 1.8rem;
           color: #202124;
           font-weight: 600;
           line-height: 1.2;
-        }
-        
-        .instruction-section {
-          position: relative;
-        }
-        
-        .instruction-preview {
-          font-size: 1rem;
-          color: #5f6368;
-          margin-bottom: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
         }
         
         .info-toggle {
@@ -400,14 +394,21 @@ export default function TagsPage({
         }
         
         .instruction-details {
-          background-color: rgba(255, 255, 255, 0.8);
+          background-color: rgba(255, 255, 255, 0.9);
           border: 1px solid #E8C4A0;
-          border-radius: 8px;
-          padding: 1rem;
-          margin-top: 0.5rem;
-          font-size: 0.9rem;
-          color: #5f6368;
+          border-radius: 12px;
+          padding: 1.25rem;
+          margin-top: 1rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
           animation: slideDown 0.2s ease-out;
+          position: relative;
+        }
+        
+        .instruction-text {
+          margin: 0;
+          font-size: 1rem;
+          color: #202124;
+          line-height: 1.4;
         }
         
         @keyframes slideDown {
@@ -429,7 +430,7 @@ export default function TagsPage({
         
         .desktop-add-tag {
           padding: 1.5rem;
-          padding-top: 0;
+          padding-bottom: 0;
           margin-top: auto;
           flex-shrink: 0;
         }
@@ -679,13 +680,18 @@ export default function TagsPage({
             padding: 1rem;
           }
           
-          .core-question {
-            font-size: 1.4rem;
+          .core-question-container {
+            gap: 0.5rem;
             margin-bottom: 0.5rem;
           }
           
-          .instruction-preview {
+          .core-question {
+            font-size: 1.4rem;
+          }
+          
+          .info-toggle {
             font-size: 0.9rem;
+            padding: 0.2rem;
           }
           
           .tags-header {
@@ -725,12 +731,16 @@ export default function TagsPage({
         
         /* Very small screens */
         @media (max-width: 480px) {
+          .core-question-container {
+            gap: 0.4rem;
+          }
+          
           .core-question {
             font-size: 1.2rem;
           }
           
-          .instruction-preview {
-            font-size: 0.85rem;
+          .info-toggle {
+            font-size: 0.8rem;
           }
           
           .fab {

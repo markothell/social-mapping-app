@@ -272,22 +272,32 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
 
       <style jsx>{`
         .grid-container {
-          flex: 0 0 600px;
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
+          width: 100%;
+          max-width: 680px;
+          margin: 0 auto;
         }
         
         .grid-row {
           display: flex;
           align-items: center;
+          justify-content: center;
           width: 100%;
+          max-width: 680px;
+          gap: 0.25rem;
+          flex: 0 0 auto;
         }
         
         .mapping-grid {
           position: relative;
-          width: 600px;
-          height: 600px;
+          flex: 1;
+          width: 100%;
+          aspect-ratio: 1;
+          max-width: 600px;
+          max-height: 600px;
           background-color: white;
           border: 1px solid #dadce0;
           overflow: visible;
@@ -326,8 +336,39 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           padding: 0.5rem;
         }
         
-        .direction-label.top, .direction-label.bottom {
-          width: 600px;
+        .direction-label.top {
+          margin-bottom: 0.5rem;
+          width: 100%;
+          max-width: 680px;
+        }
+        
+        .direction-label.bottom {
+          margin-top: 0.5rem;
+          width: 100%;
+          max-width: 680px;
+        }
+        
+        .direction-label.left {
+          writing-mode: vertical-lr;
+          text-orientation: mixed;
+          padding-right: 0.25rem;
+          width: 20px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transform: rotate(180deg);
+        }
+        
+        .direction-label.right {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          padding-left: 0.25rem;
+          width: 20px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .positioned-tag {
@@ -513,24 +554,11 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
-        @media (max-width: 992px) {
-          .grid-container {
-            flex: 0 0 auto;
-            width: 100%;
-          }
-          
-          .mapping-grid, .direction-label.top, .direction-label.bottom {
-            width: 100%;
-            max-width: 600px;
-          }
-          
-          .mapping-grid {
-            height: 0;
-            padding-bottom: 100%; /* Make it square */
-          }
-          
-          .direction-label.left, .direction-label.right {
-            padding: 0 0.25rem;
+        @media (max-width: 768px) {
+          .direction-label.left, 
+          .direction-label.right {
+            font-size: 0.8rem;
+            width: 18px;
           }
         }
       `}</style>

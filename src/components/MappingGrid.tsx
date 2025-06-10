@@ -194,20 +194,31 @@ export default function MappingGrid({
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
           width: 100%;
+          height: 100%;
+          overflow: hidden;
+          max-width: 680px;
+          margin: 0 auto;
         }
         
         .grid-row {
           display: flex;
           align-items: center;
+          justify-content: center;
           width: 100%;
-          gap: 0.5rem;
+          max-width: 680px;
+          gap: 0.25rem;
+          flex: 0 0 auto;
         }
         
         .mapping-grid {
           position: relative;
           flex: 1;
-          height: 600px;
+          width: 100%;
+          aspect-ratio: 1;
+          max-width: 600px;
+          max-height: 600px;
           background-color: white;
           border: 1px solid #dadce0;
           cursor: default;
@@ -253,17 +264,22 @@ export default function MappingGrid({
         
         .direction-label.top {
           margin-bottom: 0.5rem;
+          width: 100%;
+          max-width: 680px;
         }
         
         .direction-label.bottom {
           margin-top: 0.5rem;
+          width: 100%;
+          max-width: 680px;
         }
         
         .direction-label.left {
           writing-mode: vertical-lr;
           text-orientation: mixed;
-          padding-right: 0.5rem;
-          width: 30px;
+          padding-right: 0.25rem;
+          width: 20px;
+          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -273,8 +289,9 @@ export default function MappingGrid({
         .direction-label.right {
           writing-mode: vertical-rl;
           text-orientation: mixed;
-          padding-left: 0.5rem;
-          width: 30px;
+          padding-left: 0.25rem;
+          width: 20px;
+          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -309,7 +326,9 @@ export default function MappingGrid({
         .mapping-grid {
           position: relative !important; /* Force position relative */
           flex: 1;
-          height: 600px;
+          aspect-ratio: 1;
+          max-width: 600px;
+          max-height: 600px;
           background-color: white;
           border: 1px solid #dadce0;
           cursor: default;
@@ -444,17 +463,10 @@ export default function MappingGrid({
         }
         
         @media (max-width: 768px) {
-          .grid-row {
-            flex-direction: column;
-          }
-          
           .direction-label.left, 
           .direction-label.right {
-            padding: 0.5rem 0;
-          }
-          
-          .mapping-grid {
-            height: 400px;
+            font-size: 0.8rem;
+            width: 18px;
           }
         }
       `}</style>

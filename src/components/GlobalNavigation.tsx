@@ -75,7 +75,7 @@ export default function GlobalNavigation({
       case 'map':
         return approvedTags.length === 0;
       case 'results':
-        return activity.status !== 'completed';
+        return false;
       default:
         return false;
     }
