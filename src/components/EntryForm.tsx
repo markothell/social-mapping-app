@@ -126,17 +126,16 @@ export default function EntryForm({ user, participants = [], onJoin, onCancel, s
   
   return (
     <div className="entry-form-container">
-      <h2>Join this activity</h2>
       
       <form onSubmit={handleSubmit} className="join-form">
         <div className="form-group">
-          <label htmlFor="userName">Your Name</label>
+          <label htmlFor="userName">Enter a name to join</label>
           <input
             type="text"
             id="userName"
             value={userName}
             onChange={handleNameChange}
-            placeholder="Enter your name to join"
+            placeholder=""
             required
           />
           {showExistingUserPrompt && existingParticipant && (
@@ -179,6 +178,9 @@ export default function EntryForm({ user, participants = [], onJoin, onCancel, s
       <style jsx>{`
         .entry-form-container {
           margin-top: 2rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
         
         h2 {
@@ -190,6 +192,7 @@ export default function EntryForm({ user, participants = [], onJoin, onCancel, s
         
         .join-form {
           max-width: 400px;
+          width: 100%;
         }
         
         .form-group {
@@ -219,8 +222,8 @@ export default function EntryForm({ user, participants = [], onJoin, onCancel, s
         .join-button {
           flex: 1;
           padding: 0.75rem;
-          background-color: #1a73e8;
-          color: white;
+          background-color: var(--amber-highlight, #F5B700);
+          color: var(--carafe-brown, #3E2B20);
           border: none;
           border-radius: 4px;
           font-size: 1rem;
@@ -229,7 +232,7 @@ export default function EntryForm({ user, participants = [], onJoin, onCancel, s
         }
         
         .join-button:hover {
-          background-color: #1765cc;
+          background-color: #F29900;
         }
         
         .cancel-button {

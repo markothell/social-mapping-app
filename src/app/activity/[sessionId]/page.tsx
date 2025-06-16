@@ -7,6 +7,7 @@ import { useRealTimeActivity } from '@/core/hooks/useRealTimeActivity';
 import ActivityNotFound from '@/components/ActivityNotFound';
 import ActivityHeader from '@/components/ActivityHeader';
 import EntryForm from '@/components/EntryForm';
+import ActivityIntro from '@/components/ActivityIntro';
 import AdminControls from '@/components/AdminControls';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import ParticipantActivityIndicator from '@/components/ParticipantActivityIndicator';
@@ -174,73 +175,75 @@ export default function ActivityPage({
   return (
     <div className="activity-page">
       <ActivityHeader 
-        activityTitle={activity?.settings?.entryView?.title}
-        hostName={activity?.hostName}
+        variant="entry"
       />
       <div className="activity-container">
         <div className="activity-header">
-          <h1>Welcome</h1>
+          <h1>Social_Map.{activity?.settings?.entryView?.title || activity?.settings?.title || 'Activity'}</h1>
           <p className="activity-description">
             {activity.settings.entryView?.description || 'Join this collaborative activity to contribute.'}
           </p>
+          {(activity?.hostName || activity?.settings?.entryView?.hostName) && (
+            <p className="designed-by">
+              Designed by {activity?.hostName || activity?.settings?.entryView?.hostName}
+            </p>
+          )}
           
-          <div className="activity-meta">
-            <div className="activity-type">
-              {activity.type === 'mapping' ? 'Social Mapping Activity' : 'Ranking Activity'}
-            </div>
-            <div className={`activity-status ${activity.status}`}>
-              {activity.status === 'active' ? 'Active' : 'Completed'}
-            </div>
-          </div>
         </div>
         
         {/* Show connection status */}
         <ConnectionStatus />
         
         {!user || isSwitchingUser ? (
-          <EntryForm 
-            user={isSwitchingUser ? user : null} 
-            participants={participants}
-            onJoin={isSwitchingUser ? handleSwitchUserJoin : handleJoin}
-            onCancel={isSwitchingUser ? handleCancelSwitch : undefined}
-            showCancel={isSwitchingUser}
-          />
+          <>
+            <EntryForm 
+              user={isSwitchingUser ? user : null} 
+              participants={participants}
+              onJoin={isSwitchingUser ? handleSwitchUserJoin : handleJoin}
+              onCancel={isSwitchingUser ? handleCancelSwitch : undefined}
+              showCancel={isSwitchingUser}
+            />
+            {!isSwitchingUser && <ActivityIntro />}
+          </>
         ) : activity.status === 'completed' ? (
           <div className="participant-info">
             {/* Hide user participation info when activity is completed */}
           </div>
         ) : (
-          <div className="participant-info">
-            <p>You are participating as: <strong>{user.name}</strong></p>
-            <div className="action-buttons">
-              <button
-                onClick={() => {
-                  // Navigate to appropriate phase
-                  if (activity.phase === 'gathering' || activity.phase === 'tagging') {
-                    router.push(`/activity/${activity.id}/tags`);
-                  } else if (activity.phase === 'mapping') {
-                    router.push(`/activity/${activity.id}/mapping`);
-                  } else if (activity.phase === 'mapping-results') {
-                    router.push(`/activity/${activity.id}/mapping-results`);
-                  } else if (activity.phase === 'ranking') {
-                    router.push(`/activity/${activity.id}/ranking`);
-                  } else if (activity.phase === 'results') {
-                    router.push(`/activity/${activity.id}/results`);
-                  }
-                }}
-                className="primary-button"
-              >
-                Continue to Activity
-              </button>
-              
-              <button
-                onClick={handleSwitchUser}
-                className="secondary-button"
-              >
-                Switch User
-              </button>
+          <>
+            <div className="participant-info">
+              <p>You are participating as: <strong>{user.name}</strong></p>
+              <div className="action-buttons">
+                <button
+                  onClick={() => {
+                    // Navigate to appropriate phase
+                    if (activity.phase === 'gathering' || activity.phase === 'tagging') {
+                      router.push(`/activity/${activity.id}/tags`);
+                    } else if (activity.phase === 'mapping') {
+                      router.push(`/activity/${activity.id}/mapping`);
+                    } else if (activity.phase === 'mapping-results') {
+                      router.push(`/activity/${activity.id}/mapping-results`);
+                    } else if (activity.phase === 'ranking') {
+                      router.push(`/activity/${activity.id}/ranking`);
+                    } else if (activity.phase === 'results') {
+                      router.push(`/activity/${activity.id}/results`);
+                    }
+                  }}
+                  className="primary-button"
+                >
+                  Continue to Activity
+                </button>
+                
+                <button
+                  onClick={handleSwitchUser}
+                  className="secondary-button"
+                >
+                  Switch User
+                </button>
+              </div>
             </div>
-          </div>
+            {activity.status === 'active' && <ActivityIntro />}
+          </>
         )}
         
         {isAdmin && user && (
@@ -261,19 +264,28 @@ export default function ActivityPage({
             </button>
           </div>
         )}
+        
+        <div className="sit-footer">
+          <a href="https://socialinsight.tools" target="_blank" rel="noopener noreferrer">
+            <strong>Social Insight Tools</strong>
+          </a>
+        </div>
       </div>
       
       <style jsx>{`
         .activity-page {
-          color: #202124;
+          color: var(--carafe-brown);
         }
         
         .activity-container {
-          background-color: #FDF6E9;
+          background-color: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
           border-radius: 12px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(232, 196, 160, 0.3);
           padding: 2rem;
-          margin: 1rem;
+          margin: 1rem auto;
+          max-width: 800px;
         }
         
         .activity-header {
@@ -285,12 +297,19 @@ export default function ActivityPage({
           margin-top: 0;
           margin-bottom: 0.5rem;
           font-size: 2rem;
-          color: #202124;
+          color: var(--carafe-brown);
         }
         
         .activity-description {
-          color: #5f6368;
+          color: var(--warm-earth);
           font-size: 1.1rem;
+          margin-bottom: 1.5rem;
+        }
+        
+        .designed-by {
+          color: var(--warm-earth);
+          font-size: 0.9rem;
+          font-style: italic;
           margin-bottom: 1.5rem;
         }
         
@@ -302,11 +321,12 @@ export default function ActivityPage({
         }
         
         .activity-type {
-          background-color: #e8f0fe;
-          color: #1a73e8;
+          background-color: rgba(232, 108, 43, 0.1);
+          color: var(--rust-button);
           padding: 0.3rem 0.8rem;
           border-radius: 16px;
           font-size: 0.9rem;
+          border: 1px solid rgba(232, 108, 43, 0.2);
         }
         
         .activity-status {
@@ -316,18 +336,21 @@ export default function ActivityPage({
         }
         
         .activity-status.active {
-          background-color: #e6f4ea;
-          color: #34a853;
+          background-color: rgba(245, 183, 0, 0.1);
+          color: var(--amber-highlight);
+          border: 1px solid rgba(245, 183, 0, 0.2);
         }
         
         .activity-status.completed {
-          background-color: #f1f3f4;
-          color: #5f6368;
+          background-color: var(--light-beige);
+          color: var(--warm-earth);
+          border: 1px solid var(--dust-beige);
         }
         
         .participant-info {
           margin-top: 2rem;
           text-align: center;
+          color: var(--carafe-brown);
         }
         
         .action-buttons {
@@ -338,46 +361,53 @@ export default function ActivityPage({
         }
         
         .primary-button {
-          background-color: #1a73e8;
-          color: white;
+          background-color: var(--amber-highlight);
+          color: var(--carafe-brown);
           border: none;
-          border-radius: 4px;
+          border-radius: 8px;
           padding: 0.75rem 1.5rem;
           font-size: 1rem;
+          font-weight: 600;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
         .primary-button:hover {
-          background-color: #1765cc;
+          background-color: #F29900;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
         
         .secondary-button {
-          background-color: #f1f3f4;
-          color: #202124;
-          border: none;
-          border-radius: 4px;
+          background-color: var(--light-beige);
+          color: var(--carafe-brown);
+          border: 1px solid var(--dust-beige);
+          border-radius: 8px;
           padding: 0.75rem 1.5rem;
           font-size: 1rem;
+          font-weight: 500;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.2s ease;
         }
         
         .secondary-button:hover {
-          background-color: #e8eaed;
+          background-color: var(--dust-beige);
+          transform: translateY(-1px);
         }
         
         .activity-completed-notice {
           margin-top: 2rem;
           padding: 1.5rem;
-          background-color: #fef7e0;
+          background-color: var(--sand-base);
           border-radius: 8px;
           text-align: center;
+          border: 1px solid var(--dust-beige);
         }
         
         .activity-completed-notice h3 {
           margin-top: 0;
-          color: #b06000;
+          color: var(--warm-earth);
         }
         
         .loading-container {
@@ -386,22 +416,39 @@ export default function ActivityPage({
           align-items: center;
           justify-content: center;
           padding: 4rem 2rem;
-          color: #5f6368;
+          color: var(--warm-earth);
           text-align: center;
         }
         
         .loading-spinner {
           width: 40px;
           height: 40px;
-          border: 4px solid rgba(26, 115, 232, 0.2);
+          border: 4px solid rgba(232, 108, 43, 0.2);
           border-radius: 50%;
-          border-top-color: #1a73e8;
+          border-top-color: var(--rust-button);
           animation: spin 1s linear infinite;
           margin-bottom: 1rem;
         }
         
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        
+        .sit-footer {
+          text-align: center;
+          margin-top: 2rem;
+          padding-top: 1rem;
+        }
+        
+        .sit-footer a {
+          color: var(--carafe-brown);
+          text-decoration: none;
+          font-size: 1.35rem;
+        }
+        
+        .sit-footer a:hover {
+          color: var(--rust-button);
+          text-decoration: underline;
         }
       `}</style>
     </div>

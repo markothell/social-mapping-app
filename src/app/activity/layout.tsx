@@ -101,13 +101,12 @@ export default function ActivityLayout({
         }
 
         .content-wrapper {
-          max-width: 1200px;
-          margin: 0 auto;
           padding: 0;
           flex: 1;
           display: flex;
           flex-direction: column;
           width: 100%;
+          overflow: visible;
         }
         
         /* Mobile optimizations */

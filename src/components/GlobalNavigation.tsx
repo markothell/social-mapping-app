@@ -28,28 +28,52 @@ export default function GlobalNavigation({
     {
       id: 'home',
       label: 'Home',
-      icon: '🏠',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+      ),
       route: `/activity/${sessionId}`,
       description: 'Activity overview'
     },
     {
       id: 'nominate',
       label: 'Nominate',
-      icon: '⏰',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+      ),
       route: `/activity/${sessionId}/tags`,
       description: 'Add and vote on topics'
     },
     {
       id: 'map',
       label: 'Map',
-      icon: '▦',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="8" height="8"/>
+          <rect x="13" y="3" width="8" height="8"/>
+          <rect x="3" y="13" width="8" height="8"/>
+          <rect x="13" y="13" width="8" height="8"/>
+        </svg>
+      ),
       route: `/activity/${sessionId}/mapping`,
       description: 'Position topics on grid'
     },
     {
       id: 'results',
       label: 'Results',
-      icon: '📊',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      ),
       route: `/activity/${sessionId}/mapping-results`,
       description: 'View final results'
     }
@@ -131,19 +155,10 @@ export default function GlobalNavigation({
                 >
                   <span className="tab-icon">{item.icon}</span>
                   <span className="tab-label">{item.label}</span>
-                  {isActive && <div className="tab-indicator" />}
                 </button>
               );
             })}
           </div>
-          
-          {activity && (
-            <div className="activity-info">
-              <span className="participants-count">
-                {activity.participants?.length || 0} participant{activity.participants?.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-          )}
         </div>
       </nav>
 
@@ -226,9 +241,7 @@ export default function GlobalNavigation({
         /* Desktop Navigation */
         .desktop-nav {
           display: none;
-          background: rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(232, 196, 160, 0.3);
+          background: none;
           position: sticky;
           top: 0;
           z-index: 90;
@@ -238,39 +251,53 @@ export default function GlobalNavigation({
           max-width: 1200px;
           margin: 0 auto;
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
-          padding: 0 1rem;
+          padding: 1rem;
         }
         
         .nav-tabs {
           display: flex;
-          gap: 0.5rem;
+          gap: 1rem;
         }
         
         .nav-tab {
-          background: none;
-          border: none;
+          background: #f5f0e8;
+          border: 1px solid #e8c4a0;
           display: flex;
+          flex-direction: column;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.75rem 1rem;
+          padding: 1rem;
           cursor: pointer;
           transition: all 0.2s ease;
-          border-radius: 8px;
+          border-radius: 12px;
           position: relative;
           color: var(--warm-earth);
           font-weight: 500;
+          min-width: 80px;
+          outline: none;
+        }
+        
+        .nav-tab:focus {
+          outline: none;
+        }
+        
+        .nav-tab:active {
+          outline: none;
+          border-color: #e8c4a0;
         }
         
         .nav-tab:not(.disabled):hover {
-          background: rgba(232, 108, 43, 0.1);
+          background: #e8c4a0;
           color: var(--rust-button);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         
         .nav-tab.active {
-          color: var(--rust-button);
-          background: rgba(232, 108, 43, 0.1);
+          color: #7A403E;
+          background: rgba(122, 64, 62, 0.15);
         }
         
         .nav-tab.disabled {
@@ -279,21 +306,16 @@ export default function GlobalNavigation({
         }
         
         .tab-icon {
-          font-size: 1rem;
+          font-size: 1.25rem;
         }
         
         .tab-label {
-          font-size: 0.9rem;
+          font-size: 0.8rem;
+          text-align: center;
         }
         
         .tab-indicator {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: var(--rust-button);
-          border-radius: 1px 1px 0 0;
+          display: none;
         }
         
         .activity-info {
