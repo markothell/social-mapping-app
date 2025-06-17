@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { activityService } from '@/core/services/activityService';
+import { hybridActivityService } from '@/core/services/hybridActivityService';
 import { getAdminUrl, getActivityUrl } from '@/utils/adminUrls';
 
 export default function CreateActivityPage() {
@@ -35,7 +35,7 @@ export default function CreateActivityPage() {
   // Results settings
   const [resultsInstruction, setResultsInstruction] = useState('Review the collective mapping to understand different perspectives and insights.');
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Store the custom mapping instruction in localStorage
@@ -76,10 +76,12 @@ export default function CreateActivityPage() {
       }
     };
     
-    const activity = activityService.create(activityType, activitySettings);
+    const activity = await hybridActivityService.create(activityType, activitySettings);
     
-    // Open the new activity in a new tab and navigate back to admin
-    window.open(getActivityUrl(`/activity/${activity.id}`), '_blank');
+    console.log('Created new activity with ID:', activity.id);
+    console.log('Activity object:', activity);
+    
+    // Navigate back to admin panel
     router.push(getAdminUrl('/admin'));
   };
   

@@ -220,11 +220,37 @@ export const hybridActivityService = {
    * SOURCE OF TRUTH: MongoDB when online, localStorage when offline
    */
   async getById(id: string): Promise<Activity | null> {
+    console.log(`hybridActivityService.getById called for ID: ${id}`);
+    
     // First check if it exists locally
     const localActivity = activityService.getById(id);
     
-    // If not found locally, we can't get it
+    console.log(`Local activity found:`, localActivity ? 'YES' : 'NO');
+    if (localActivity) {
+      console.log(`Local activity flags: _justCreated=${!!(localActivity as any)._justCreated}, _creationAttempted=${!!(localActivity as any)._creationAttempted}`);
+    }
+    
+    // If not found locally, try MongoDB immediately (could be a newly created activity on different domain)
     if (!localActivity) {
+      console.log(`Activity ${id} not found locally, trying MongoDB...`);
+      
+      if (this.isOnline()) {
+        try {
+          const remoteActivity = await mongoDbService.getActivityById(id);
+          if (remoteActivity) {
+            console.log(`Found activity ${id} in MongoDB, adding to local cache`);
+            // Add to local cache
+            const allActivities = activityService.getAll();
+            allActivities.push(remoteActivity);
+            activityService.saveAll(allActivities);
+            return remoteActivity;
+          }
+        } catch (error) {
+          console.warn(`Error fetching activity ${id} from MongoDB:`, error);
+        }
+      }
+      
+      console.log(`Activity ${id} not found locally or in MongoDB, returning null`);
       return null;
     }
     
@@ -238,13 +264,17 @@ export const hybridActivityService = {
     // Only try MongoDB if we're online and it's not a newly created activity
     if (this.isOnline()) {
       try {
+        console.log(`Fetching activity ${id} from MongoDB...`);
         // Try to get from MongoDB
         const remoteActivity = await mongoDbService.getActivityById(id);
         
         if (remoteActivity) {
+          console.log(`Found activity ${id} in MongoDB, updating local cache`);
           // Update local cache
           activityService.update(id, () => remoteActivity);
           return remoteActivity;
+        } else {
+          console.log(`Activity ${id} not found in MongoDB`);
         }
       } catch (error) {
         console.warn(`Error fetching activity ${id} from MongoDB, using cached data:`, error);
@@ -253,6 +283,7 @@ export const hybridActivityService = {
     }
     
     // Return the local version if MongoDB fetch failed or we're offline
+    console.log(`Returning local activity for ${id}`);
     return localActivity;
   },
     
@@ -262,40 +293,20 @@ export const hybridActivityService = {
    * If offline, write to localStorage and queue for sync
    */
   async create(type: 'mapping' | 'ranking', settings: any): Promise<Activity> {
-    // Create new activity with modern unique ID
-    const newActivity = createDefaultActivity(type, settings.entryView?.title || '');
-    
-    // Deep merge settings with special handling for mapping and ranking
-    const mergedSettings = { ...newActivity.settings };
-    
-    // Merge entryView and tagCreation settings
-    if (settings.entryView) {
-      mergedSettings.entryView = { ...mergedSettings.entryView, ...settings.entryView };
-    }
-    
-    if (settings.tagCreation) {
-      mergedSettings.tagCreation = { ...mergedSettings.tagCreation, ...settings.tagCreation };
-    }
-    
-    // Handle specific activity type settings
-    if (type === 'mapping' && settings.mapping) {
-      // If this is a mapping activity and mapping settings were provided, use them directly
-      mergedSettings.mapping = { ...mergedSettings.mapping, ...settings.mapping };
-    } else if (type === 'ranking' && settings.ranking) {
-      // If this is a ranking activity and ranking settings were provided, use them directly
-      mergedSettings.ranking = { ...mergedSettings.ranking, ...settings.ranking };
-    }
-    
-    // Apply merged settings
-    newActivity.settings = mergedSettings;
+    console.log('hybridActivityService.create called with type:', type);
+    // First save to local storage to ensure it exists immediately
+    const localActivity = activityService.create(type, settings);
+    console.log('Local activity created with ID:', localActivity.id);
     
     // Set a flag to indicate this activity was just created
     // This will prevent unnecessary fetch attempts in other methods
-    (newActivity as any)._justCreated = true;
-    (newActivity as any)._creationAttempted = true;
+    (localActivity as any)._justCreated = true;
+    (localActivity as any)._creationAttempted = true;
+    console.log('Set creation flags on activity:', localActivity.id);
     
-    // First save to local storage to ensure it exists immediately
-    const localActivity = activityService.create(type, settings);
+    // Update the activity in local storage with the flags
+    const updatedActivity = activityService.update(localActivity.id, () => localActivity);
+    console.log('Updated activity with flags, result:', updatedActivity ? 'SUCCESS' : 'FAILED');
     
     // If we're online, also try to create in MongoDB asynchronously
     if (this.isOnline()) {

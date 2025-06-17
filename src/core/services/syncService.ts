@@ -130,6 +130,12 @@ export const syncService = {
             localActivityMap.set(remoteActivity.id, remoteActivity);
             this._syncStatus.syncResult.created++;
           } else {
+            // Skip sync for newly created activities that haven't been synced yet
+            if ((localActivity as any)._justCreated || (localActivity as any)._creationAttempted) {
+              console.log(`Skipping sync for newly created activity: ${localActivity.id}`);
+              continue;
+            }
+            
             // Activity exists both locally and remotely - check which is newer
             const localUpdatedAt = new Date(localActivity.updatedAt).getTime();
             const remoteUpdatedAt = new Date(remoteActivity.updatedAt).getTime();

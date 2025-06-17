@@ -58,7 +58,9 @@ export const activityService = {
   },
   
   create(type: 'mapping' | 'ranking', settings: any): Activity {
+    console.log('activityService.create called with type:', type);
     const newActivity = createDefaultActivity(type, settings.entryView?.title || '');
+    console.log('Created new activity object with ID:', newActivity.id);
     
     // Extract hostName from settings and set it as a top-level property
     if (settings.entryView?.hostName) {
@@ -82,9 +84,17 @@ export const activityService = {
     };
     
     const activities = this.getAll();
+    console.log('Current activities count before adding:', activities.length);
     activities.push(newActivity);
+    console.log('Activities count after adding:', activities.length);
     
     this.saveAll(activities);
+    console.log('Saved all activities to localStorage');
+    
+    // Verify it was saved by immediately reading it back
+    const savedActivity = this.getById(newActivity.id);
+    console.log('Verification - activity found after save:', savedActivity ? 'YES' : 'NO');
+    
     return newActivity;
   },
   
