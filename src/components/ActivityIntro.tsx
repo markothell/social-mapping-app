@@ -200,6 +200,8 @@ export default function ActivityIntro() {
           display: flex;
           gap: 0.5rem;
           align-items: center;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .input-box input {
@@ -209,6 +211,8 @@ export default function ActivityIntro() {
           border-radius: 6px;
           background-color: rgba(255, 255, 255, 0.8);
           color: var(--warm-earth);
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .add-button {

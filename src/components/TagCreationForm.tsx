@@ -52,6 +52,7 @@ export default function TagCreationForm({ onAddTag }: TagCreationFormProps) {
       <style jsx>{`
         .tag-creation-form {
           margin-bottom: 0;
+          padding: 0 1.5rem 1.5rem 1.5rem;
         }
         
         .input-container {

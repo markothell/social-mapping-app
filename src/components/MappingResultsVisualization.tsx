@@ -524,6 +524,9 @@ export default function MappingResultsVisualization({
                               title="Click to view individual map"
                             >
                               <div className="annotation-content">{annotation.text}</div>
+                              <div className="position-coordinates">
+                                Position: ({Math.round(annotation.x * 10 - 5)}, {Math.round(annotation.y * 10 - 5)})
+                              </div>
                             </div>
                           </div>
                         );
@@ -568,7 +571,7 @@ export default function MappingResultsVisualization({
                             <div className="tag-title">{comment.tagText}</div>
                             <div className="annotation-content individual-view">{comment.annotation}</div>
                             <div className="position-coordinates">
-                              Position: ({(comment.position.x * 10 - 5).toFixed(1)}, {(comment.position.y * 10 - 5).toFixed(1)})
+                              Position: ({Math.round(comment.position.x * 10 - 5)}, {Math.round(comment.position.y * 10 - 5)})
                             </div>
                           </div>
                         ))}
@@ -605,7 +608,7 @@ export default function MappingResultsVisualization({
                 <h4>Statistics for "{tagStats.tag.text}"</h4>
                 <ul>
                   <li>Mappings: {tagStats.mappingCount}</li>
-                  <li>Average position: ({(tagStats.averageX * 10 - 5).toFixed(1)}, {(tagStats.averageY * 10 - 5).toFixed(1)})</li>
+                  <li>Average position: ({Math.round(tagStats.averageX * 10 - 5)}, {Math.round(tagStats.averageY * 10 - 5)})</li>
                   <li>Quadrant: {tagStats.quadrant}</li>
                   <li>Consensus: {(tagStats.consensus * 100).toFixed(1)}%</li>
                   <li>Standard deviation X: {tagStats.stdDevX.toFixed(2)}</li>

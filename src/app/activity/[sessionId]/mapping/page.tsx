@@ -318,11 +318,22 @@ export default function MappingPage({
         annotation: mapping.annotation
       }));
       
-      updateMapping(positions, false); // Auto-save without marking as complete
+      // Check if all positioned tags have annotations for auto-completion
+      const allPositionsHaveComments = Object.values(newUserMappings)
+        .filter((mapping: any) => !mapping.isPlaceholder)
+        .every((mapping: any) => mapping.annotation && mapping.annotation.trim() !== '');
+      
+      const shouldMarkComplete = allPositionsHaveComments && Object.keys(newUserMappings).length > 0;
+      
+      updateMapping(positions, shouldMarkComplete);
       lastSavedMappings.current = { ...newUserMappings };
       setHasUnsavedChanges(false);
       
-      console.log('Tag positioned with context - auto-saved to database');
+      if (shouldMarkComplete) {
+        console.log('All positioned tags have context - marking mapping as complete');
+      } else {
+        console.log('Tag positioned with context - auto-saved to database');
+      }
     } else {
       console.log('Tag positioned but no context yet - not saving to database');
     }
@@ -632,11 +643,22 @@ export default function MappingPage({
                               annotation: mapping.annotation
                             }));
                             
-                            updateMapping(positions, false); // Auto-save without marking as complete
+                            // Check if all positioned tags have annotations for auto-completion
+                            const allPositionsHaveComments = Object.values(newUserMappings)
+                              .filter((mapping: any) => !mapping.isPlaceholder)
+                              .every((mapping: any) => mapping.annotation && mapping.annotation.trim() !== '');
+                            
+                            const shouldMarkComplete = allPositionsHaveComments && Object.keys(newUserMappings).length > 0;
+                            
+                            updateMapping(positions, shouldMarkComplete);
                             lastSavedMappings.current = { ...newUserMappings };
                             setHasUnsavedChanges(false);
                             
-                            console.log('Context added to positioned tag - auto-saved to database');
+                            if (shouldMarkComplete) {
+                              console.log('All positioned tags have context - marking mapping as complete');
+                            } else {
+                              console.log('Context added to positioned tag - auto-saved to database');
+                            }
                           } else {
                             console.log('Context updated but tag not fully positioned - not saving to database');
                           }
