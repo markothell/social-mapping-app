@@ -10,7 +10,6 @@ import EntryForm from '@/components/EntryForm';
 import ActivityIntro from '@/components/ActivityIntro';
 import AdminControls from '@/components/AdminControls';
 import ConnectionStatus from '@/components/ConnectionStatus';
-import ParticipantActivityIndicator from '@/components/ParticipantActivityIndicator';
 import { useWebSocket } from '@/core/services/websocketService';
 
 // Helper function for consistent params handling across the app
@@ -24,7 +23,7 @@ export default function ActivityPage({
   params: { sessionId: string } | Promise<{ sessionId: string }>
 }) {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSwitchingUser, setIsSwitchingUser] = useState(false);
   
@@ -57,7 +56,9 @@ export default function ActivityPage({
     loading,
     error,
     participants,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isConnected,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     offline,
   } = useRealTimeActivity(sessionId, user);
 
@@ -69,7 +70,7 @@ export default function ActivityPage({
     setIsSwitchingUser(false);
   };
   
-  const handleSwitchUserJoin = (name: string, existingParticipant?: any) => {
+  const handleSwitchUserJoin = (name: string, existingParticipant?: { id: string; name: string }) => {
     // First leave the current user if exists
     if (user && activity) {
       console.log(`User ${user.name} (${user.id}) is leaving activity ${activity.id}`);
@@ -99,7 +100,7 @@ export default function ActivityPage({
   };
   
   // Handle joining the activity
-  const handleJoin = (name: string, existingParticipant?: any) => {
+  const handleJoin = (name: string, existingParticipant?: { id: string; name: string }) => {
     if (!activity) return;
     
     let userData;

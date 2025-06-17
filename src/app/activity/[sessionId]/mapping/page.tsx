@@ -12,6 +12,16 @@ import GlobalNavigation from '@/components/GlobalNavigation';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
 
+interface MappingInstance {
+  tagId: string;
+  instanceId: string;
+  x: number;
+  y: number;
+  text: string;
+  annotation?: string;
+  isPlaceholder?: boolean;
+}
+
 function useParams<T>(params: T | Promise<T>): T {
   return params instanceof Promise ? use(params) : params;
 }
@@ -25,21 +35,20 @@ export default function MappingPage({
   const unwrappedParams = useParams(params);
   const sessionId = unwrappedParams.sessionId;
   
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; name?: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const [mappedTags, setMappedTags] = useState<string[]>([]);
-  const [userMappings, setUserMappings] = useState<any>({});
+  const [userMappings, setUserMappings] = useState<Record<string, MappingInstance>>({});
   const [tagInstanceCounts, setTagInstanceCounts] = useState<{ [tagId: string]: number }>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [editingContext, setEditingContext] = useState<string>('');
-  const [selectedInstanceKey, setSelectedInstanceKey] = useState<string | null>(null);
   const [isAddingNewInstance, setIsAddingNewInstance] = useState(false);
   const [pendingInstanceKey, setPendingInstanceKey] = useState<string | null>(null);
-  const lastSavedMappings = useRef<any>({});
+  const lastSavedMappings = useRef<Record<string, MappingInstance>>({});
   const [activeTab, setActiveTab] = useState<'topics' | 'map' | 'context'>('topics');
   const [showInstructions, setShowInstructions] = useState(false);
   const [tagFilter, setTagFilter] = useState<'all' | 'unmapped' | 'mapped'>('all');
@@ -78,18 +87,18 @@ export default function MappingPage({
   useEffect(() => {
     if (activity && user) {
       // Get approved tags and all tags for restoration
-      const approvedTags = activity.tags.filter((tag: any) => tag.status === 'approved');
+      const approvedTags = activity.tags.filter((tag: { status: string }) => tag.status === 'approved');
       const allTags = activity.tags;
       
-      const userMapping = activity.mappings.find((m: any) => m.userId === user.id);
+      const userMapping = activity.mappings.find((m: { userId: string }) => m.userId === user.id);
       
       if (userMapping) {
         // Create a map of tagId -> positions array for multiple instances
-        const mappings: any = {};
+        const mappings: Record<string, MappingInstance> = {};
         const mappedTagIds: string[] = [];
         const instanceCounts: { [tagId: string]: number } = {};
         
-        userMapping.positions.forEach((position: any) => {
+        userMapping.positions.forEach((position: { tagId: string; instanceId?: string; x: number; y: number; text?: string; annotation?: string }) => {
           // Find the tag text from all tags (not just approved ones)
           const tagInfo = allTags.find(tag => tag.id === position.tagId);
           const tagText = tagInfo?.text || position.text || position.tagId;
@@ -146,14 +155,14 @@ export default function MappingPage({
     if (tagId) {
       if (instanceId) {
         // Find specific instance
-        const instance = Object.values(userMappings).find((mapping: any) => 
+        const instance = Object.values(userMappings).find((mapping: { tagId: string; instanceId: string }) => 
           mapping.tagId === tagId && mapping.instanceId === instanceId
         );
         setEditingContext(instance?.annotation || '');
       } else {
         // Find most recent instance for unmapped tags
         const selectedTagMappings = Object.entries(userMappings)
-          .filter(([, mapping]: [string, any]) => mapping.tagId === tagId);
+          .filter(([, mapping]: [string, { tagId: string }]) => mapping.tagId === tagId);
         
         if (selectedTagMappings.length > 0) {
           const [, lastMapping] = selectedTagMappings[selectedTagMappings.length - 1];
@@ -203,7 +212,7 @@ export default function MappingPage({
   };
   
   const handleRemoveTagInstance = (tagId: string, instanceId?: string) => {
-    let newUserMappings = { ...userMappings };
+    const newUserMappings = { ...userMappings };
     
     if (instanceId) {
       // Remove specific instance
@@ -211,7 +220,7 @@ export default function MappingPage({
       delete newUserMappings[positionKey];
     } else {
       // Remove the most recent instance of this tag
-      const tagPositions = Object.entries(userMappings).filter(([, mapping]: [string, any]) => 
+      const tagPositions = Object.entries(userMappings).filter(([, mapping]: [string, { tagId: string }]) => 
         mapping.tagId === tagId
       );
       
@@ -225,7 +234,7 @@ export default function MappingPage({
     setUserMappings(newUserMappings);
     
     // Update instance counts and mapped tags based on the new mappings
-    const remainingMappings = Object.values(newUserMappings).filter((mapping: any) => mapping.tagId === tagId);
+    const remainingMappings = Object.values(newUserMappings).filter((mapping: { tagId: string }) => mapping.tagId === tagId);
     const newInstanceCounts = { ...tagInstanceCounts };
     
     if (remainingMappings.length === 0) {
@@ -268,7 +277,7 @@ export default function MappingPage({
     } else {
       // Reposition existing instance or create new one if no existing instances
       const existingMappings = Object.entries(userMappings)
-        .filter(([, mapping]: [string, any]) => mapping.tagId === tagId);
+        .filter(([, mapping]: [string, { tagId: string }]) => mapping.tagId === tagId);
       
       if (existingMappings.length > 0) {
         // Reposition the most recent instance
@@ -307,10 +316,10 @@ export default function MappingPage({
     }
     
     // Check if this tag now has both position and context before auto-saving
-    const updatedMapping = Object.values(newUserMappings).find((mapping: any) => mapping.tagId === tagId);
+    const updatedMapping = Object.values(newUserMappings).find((mapping: { tagId: string }) => mapping.tagId === tagId);
     if (updatedMapping && updatedMapping.annotation && updatedMapping.annotation.trim() !== '') {
       // Auto-save to database only when both position and context exist
-      const positions = Object.values(newUserMappings).map((mapping: any) => ({
+      const positions = Object.values(newUserMappings).map((mapping: { tagId: string; instanceId: string; x: number; y: number; annotation?: string }) => ({
         tagId: mapping.tagId,
         instanceId: mapping.instanceId,
         x: mapping.x,
@@ -320,8 +329,8 @@ export default function MappingPage({
       
       // Check if all positioned tags have annotations for auto-completion
       const allPositionsHaveComments = Object.values(newUserMappings)
-        .filter((mapping: any) => !mapping.isPlaceholder)
-        .every((mapping: any) => mapping.annotation && mapping.annotation.trim() !== '');
+        .filter((mapping: { isPlaceholder?: boolean }) => !mapping.isPlaceholder)
+        .every((mapping: { annotation?: string }) => mapping.annotation && mapping.annotation.trim() !== '');
       
       const shouldMarkComplete = allPositionsHaveComments && Object.keys(newUserMappings).length > 0;
       
@@ -345,6 +354,7 @@ export default function MappingPage({
   };
   
   // Navigation functions that check for unsaved changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const navigateWithUnsavedCheck = useCallback((path: string) => {
     console.log('Navigate check:', { hasUnsavedChanges, path });
     if (hasUnsavedChanges) {
@@ -361,7 +371,7 @@ export default function MappingPage({
     if (!activity || !user) return;
     
     // Convert mappings back to position array format for server
-    const positions = Object.values(userMappings).map((mapping: any) => ({
+    const positions = Object.values(userMappings).map((mapping: { tagId: string; instanceId: string; x: number; y: number; annotation?: string }) => ({
       tagId: mapping.tagId,
       instanceId: mapping.instanceId,
       x: mapping.x,
@@ -396,11 +406,12 @@ export default function MappingPage({
     setPendingNavigation(null);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCompleteMappings = () => {
     if (!activity || !user) return;
     
     // Convert mappings back to position array format for server
-    const positions = Object.values(userMappings).map((mapping: any) => ({
+    const positions = Object.values(userMappings).map((mapping: { tagId: string; instanceId: string; x: number; y: number; annotation?: string }) => ({
       tagId: mapping.tagId,
       instanceId: mapping.instanceId,
       x: mapping.x,
@@ -433,7 +444,7 @@ export default function MappingPage({
     return <ActivityNotFound />;
   }
   
-  const approvedTags = activity.tags.filter((tag: any) => tag.status === 'approved');
+  const approvedTags = activity.tags.filter((tag: { status: string }) => tag.status === 'approved');
   const mappingSettings = activity.settings.mapping || {
     xAxisLabel: 'Knowledge',
     xAxisLeftLabel: "Don't Know",
@@ -452,6 +463,7 @@ export default function MappingPage({
     contextInstructions: 'Why did you position this here?'
   };
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const completionPercentage = approvedTags.length > 0 
     ? Math.round((mappedTags.length / approvedTags.length) * 100) 
     : 0;
@@ -562,10 +574,10 @@ export default function MappingPage({
               <TagSelectionPanel 
                 tags={approvedTags}
                 tagInstances={Object.values(userMappings)
-                  .filter((mapping: any) => 
+                  .filter((mapping: { tagId: string; isPlaceholder?: boolean }) => 
                     approvedTags.some(tag => tag.id === mapping.tagId) && !mapping.isPlaceholder
                   )
-                  .map((mapping: any) => ({
+                  .map((mapping: { instanceId: string; tagId: string; text: string; annotation?: string }) => ({
                     id: mapping.instanceId || mapping.tagId,
                     tagId: mapping.tagId,
                     instanceId: mapping.instanceId,
@@ -617,7 +629,7 @@ export default function MappingPage({
                       onClick={() => {
                         // Find the most recent instance of the selected tag
                         const selectedTagMappings = Object.entries(userMappings)
-                          .filter(([, mapping]: [string, any]) => mapping.tagId === selectedTag);
+                          .filter(([, mapping]: [string, { tagId: string }]) => mapping.tagId === selectedTag);
                         
                         if (selectedTagMappings.length > 0) {
                           const [lastPositionKey, lastMapping] = selectedTagMappings[selectedTagMappings.length - 1];
@@ -635,7 +647,7 @@ export default function MappingPage({
                           if (updatedMapping && updatedMapping.x !== undefined && updatedMapping.y !== undefined && 
                               updatedMapping.annotation && updatedMapping.annotation.trim() !== '') {
                             // Auto-save to database only when both position and context exist
-                            const positions = Object.values(newUserMappings).map((mapping: any) => ({
+                            const positions = Object.values(newUserMappings).map((mapping: { tagId: string; instanceId: string; x: number; y: number; annotation?: string }) => ({
                               tagId: mapping.tagId,
                               instanceId: mapping.instanceId,
                               x: mapping.x,
@@ -645,8 +657,8 @@ export default function MappingPage({
                             
                             // Check if all positioned tags have annotations for auto-completion
                             const allPositionsHaveComments = Object.values(newUserMappings)
-                              .filter((mapping: any) => !mapping.isPlaceholder)
-                              .every((mapping: any) => mapping.annotation && mapping.annotation.trim() !== '');
+                              .filter((mapping: { isPlaceholder?: boolean }) => !mapping.isPlaceholder)
+                              .every((mapping: { annotation?: string }) => mapping.annotation && mapping.annotation.trim() !== '');
                             
                             const shouldMarkComplete = allPositionsHaveComments && Object.keys(newUserMappings).length > 0;
                             

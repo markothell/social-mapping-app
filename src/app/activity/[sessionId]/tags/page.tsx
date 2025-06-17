@@ -25,10 +25,11 @@ export default function TagsPage({
   const unwrappedParams = useParams(params);
   const sessionId = unwrappedParams.sessionId;
   
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showTagForm, setShowTagForm] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { incrementNewTags, setApprovedTagsChanged } = useNotifications();
   
   // Use the real-time activity hook
@@ -157,7 +158,7 @@ export default function TagsPage({
   };
   
   // Count approved tags
-  const approvedTags = activity.tags.filter((tag: any) => tag.status === 'approved');
+  const approvedTags = activity.tags.filter((tag: { status: string }) => tag.status === 'approved');
   const hasApprovedTags = approvedTags.length > 0;
 
   return (

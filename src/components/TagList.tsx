@@ -42,18 +42,11 @@ export default function TagList({
 }: TagListProps) {
   const [filter, setFilter] = useState<'all' | 'approved' | 'pending'>('all');
 
-  if (!tags || tags.length === 0) {
-    return (
-      <div className="no-tags">
-        <p>No tags have been added yet. Be the first to contribute!</p>
-      </div>
-    );
-  }
 
   // Ensure no duplicate tags by ID
-  const uniqueTags = Array.from(
+  const uniqueTags = tags && tags.length > 0 ? Array.from(
     new Map(tags.map(tag => [tag.id, tag])).values()
-  );
+  ) : [];
 
   // Filter tags by status
   const filteredTags = uniqueTags.filter(tag => {
@@ -146,7 +139,7 @@ export default function TagList({
       <div className="scrollable-tags">
         {filteredTags.length === 0 ? (
           <div className="no-tags">
-            <p>No tags match the current filter.</p>
+            <p>{uniqueTags.length === 0 ? "Nominate the first sub-topic" : "No tags match the current filter."}</p>
           </div>
         ) : (
           <div className="tag-list">
