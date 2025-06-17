@@ -60,18 +60,20 @@ export default function TagCreationForm({ onAddTag }: TagCreationFormProps) {
           align-items: center;
           background-color: #FDF0E1;
           border-radius: 25px;
-          padding: 0.5rem;
+          padding: 0.5rem 0.5rem 0.5rem 1rem;
           border: 1px solid #E8C4A0;
+          gap: 0.5rem;
         }
         
         .tag-input {
           flex: 1;
           border: none;
           background: transparent;
-          padding: 0.75rem 1rem;
+          padding: 0.75rem 0;
           font-size: 1rem;
           outline: none;
           color: #202124;
+          min-width: 0;
         }
         
         .tag-input::placeholder {
