@@ -73,7 +73,10 @@ export default function ActivityCard({
   return (
     <div className="activity-card">
       <div className="card-header">
-        <h2>{activity.settings.entryView?.title || 'Untitled Activity'}</h2>
+        <h2>
+          <span className={`status-indicator ${activity.status === 'active' ? 'active-status' : activity.status === 'completed' ? 'completed-status' : ''}`}></span>
+          {activity.settings.entryView?.title || 'Untitled Activity'}
+        </h2>
         <div className="menu-container" ref={menuRef} onClick={(e) => e.stopPropagation()}>
           <button 
             className="menu-trigger"
@@ -160,6 +163,26 @@ export default function ActivityCard({
           font-size: 1.3rem;
           color: #202124;
           flex: 1;
+          display: flex;
+          align-items: center;
+        }
+
+        .status-indicator {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          flex-shrink: 0;
+        }
+
+        .active-status {
+          background-color: #F9AB00;
+        }
+
+        .completed-status {
+          background-color: #8B4827;
         }
 
         .menu-container {
@@ -236,7 +259,7 @@ export default function ActivityCard({
 
         .activity-type {
           font-weight: 500;
-          color: #1a73e8 !important;
+          color: #8B7355 !important;
         }
 
         .activity-completed {
@@ -251,7 +274,7 @@ export default function ActivityCard({
         }
 
         .go-to-button {
-          background-color: #1a73e8;
+          background-color: #7A403E;
           color: white;
           border: none;
           border-radius: 4px;
@@ -259,10 +282,11 @@ export default function ActivityCard({
           cursor: pointer;
           font-size: 0.9rem;
           transition: background-color 0.2s;
+          font-weight: 500;
         }
 
         .go-to-button:hover {
-          background-color: #1765cc;
+          background-color: #6B352F;
         }
       `}</style>
     </div>

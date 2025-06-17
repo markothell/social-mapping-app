@@ -34,7 +34,6 @@ export default function CreateActivityPage() {
   
   // Results settings
   const [resultsInstruction, setResultsInstruction] = useState('Review the collective mapping to understand different perspectives and insights.');
-  const [requireReciprocalSharing, setRequireReciprocalSharing] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,23 +72,23 @@ export default function CreateActivityPage() {
         contextInstructions
       },
       results: {
-        instruction: resultsInstruction,
-        requireReciprocalSharing
+        instruction: resultsInstruction
       }
     };
     
     const activity = activityService.create(activityType, activitySettings);
     
-    // Navigate to the new activity
+    // Open the new activity in a new tab and navigate back to admin
     window.open(getActivityUrl(`/activity/${activity.id}`), '_blank');
+    router.push(getAdminUrl('/admin'));
   };
   
   return (
     <div className="activity-layout">
       <header className="app-header">
         <div className="container">
-          <Link href="/" className="logo">
-            Social Insight Tools
+          <Link href="/" className="logo-link">
+            <img src="/sit_logo.svg" alt="Social Insight Tools" className="header-logo" />
           </Link>
           <h1>Create New Activity</h1>
         </div>
@@ -326,17 +325,6 @@ export default function CreateActivityPage() {
                   rows={3}
                 />
               </div>
-              <div className="form-group checkbox-group">
-                <label htmlFor="requireReciprocalSharing" className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    id="requireReciprocalSharing"
-                    checked={requireReciprocalSharing}
-                    onChange={(e) => setRequireReciprocalSharing(e.target.checked)}
-                  />
-                  Require Reciprocal Sharing
-                </label>
-              </div>
             </div>
           </>
         )}
@@ -359,11 +347,19 @@ export default function CreateActivityPage() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+          color: #202124;
+          --warm-earth: #8B7355;
+          --rust-button: #E86C2B;
+          background: linear-gradient(to bottom, #F7E9CB 0%, #D8CD9D 100%);
+          background-attachment: fixed;
+          background-repeat: no-repeat;
         }
         
         .app-header {
-          background-color: #1a73e8;
-          color: white;
+          background-color: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid rgba(232, 196, 160, 0.3);
+          color: #202124;
           padding: 1rem 0;
         }
         
@@ -376,39 +372,63 @@ export default function CreateActivityPage() {
           align-items: center;
         }
         
-        .logo {
-          font-size: 1.2rem;
-          font-weight: 500;
-          color: white;
-          text-decoration: none;
+        .logo-link {
+          display: flex;
+          align-items: center;
+          transition: opacity 0.2s ease;
+        }
+        
+        .logo-link:hover {
+          opacity: 0.8;
+        }
+        
+        .header-logo {
+          height: 40px;
+          width: 40px;
+          object-fit: contain;
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: crisp-edges;
         }
         
         .app-content {
           flex: 1;
-          background-color: #f8f9fa;
+          background: transparent;
           color: #202124;
           padding: 2rem 0;
         }
         
         .content-wrapper {
-          max-width: 1200px;
+          max-width: 800px;
           margin: 0 auto;
-          padding: 0 2rem;
+          padding: 0 1rem;
         }
         
         .create-activity {
-          background-color: white;
-          border-radius: 8px;
+          background-color: #FDF6E9;
+          border-radius: 12px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-          padding: 2rem;
+          padding: 1.5rem;
+          margin: 0.5rem auto;
+          margin-bottom: 1rem;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          min-height: 0;
           max-width: 800px;
-          margin: 0 auto;
+          width: 100%;
+        }
+        
+        @media (min-width: 768px) {
+          .create-activity {
+            padding: 2rem;
+          }
         }
         
         .app-header h1 {
           margin: 0;
           font-size: 1.5rem;
-          color: white;
+          color: #202124;
         }
         
         h2 {
@@ -429,9 +449,16 @@ export default function CreateActivityPage() {
         
         .form-section {
           margin-bottom: 2rem;
-          background-color: #f8f9fa;
-          padding: 1.5rem;
+          background-color: transparent;
+          padding: 1rem;
           border-radius: 8px;
+          border: 1px solid #E96C2B;
+        }
+        
+        @media (min-width: 768px) {
+          .form-section {
+            padding: 1.5rem;
+          }
         }
         
         .form-group {
@@ -452,12 +479,21 @@ export default function CreateActivityPage() {
           border: 1px solid #dadce0;
           border-radius: 4px;
           font-size: 1rem;
+          background-color: rgba(255, 255, 255, 0.8);
         }
         
         .axis-labels {
           display: flex;
-          gap: 2rem;
+          flex-direction: column;
+          gap: 1rem;
           align-items: flex-start;
+        }
+        
+        @media (min-width: 768px) {
+          .axis-labels {
+            flex-direction: row;
+            gap: 2rem;
+          }
         }
         
         .axis-visual {
@@ -592,8 +628,13 @@ export default function CreateActivityPage() {
         }
         
         .form-actions button.primary {
-          background-color: #4285f4;
+          background-color: #7A403E;
           color: white;
+          transition: background-color 0.2s;
+        }
+
+        .form-actions button.primary:hover {
+          background-color: #6B352F;
         }
       `}</style>
     </div>

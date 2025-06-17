@@ -625,7 +625,7 @@ export default function MappingPage({
                   </h3>
                   {selectedTag && !isAddingNewInstance && activity.status !== 'completed' && (
                     <button
-                      className="update-context-button"
+                      className="submit-context-button"
                       onClick={() => {
                         // Find the most recent instance of the selected tag
                         const selectedTagMappings = Object.entries(userMappings)
@@ -685,7 +685,7 @@ export default function MappingPage({
                         }
                       }}
                     >
-                      Update Context
+                      Submit
                     </button>
                   )}
                 </div>
@@ -693,7 +693,7 @@ export default function MappingPage({
                   <textarea
                     value={editingContext}
                     onChange={(e) => setEditingContext(e.target.value)}
-                    placeholder={selectedTag ? "Add context for this positioning..." : "Select a tag to add context"}
+                    placeholder={selectedTag ? (activity.settings?.mapping?.contextInstructions || "Add context for this positioning...") : "Select a tag to add context"}
                     className="context-input"
                     rows={4}
                     disabled={!selectedTag || isAddingNewInstance || activity.status === 'completed'}
@@ -920,12 +920,14 @@ export default function MappingPage({
         }
 
         .context-display {
-          background-color: #f8f9fa;
-          border-radius: 8px;
+          background-color: var(--sand-base);
+          border: 1px solid #E8C4A0;
+          border-radius: 12px;
           padding: 1.5rem;
           height: 100%;
           display: flex;
           flex-direction: column;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .context-placeholder {
@@ -977,42 +979,48 @@ export default function MappingPage({
 
         .context-input {
           width: 100%;
-          padding: 0.5rem;
-          border: 1px solid #dadce0;
-          border-radius: 4px;
+          padding: 0.75rem;
+          border: 1px solid #E8C4A0;
+          border-radius: 8px;
           font-size: 0.9rem;
           font-family: inherit;
           resize: none;
           flex: 1;
           min-height: 120px;
+          background-color: #FDF6E9;
+          color: var(--carafe-brown);
         }
 
         .context-input:focus {
           outline: none;
-          border-color: #1a73e8;
-          box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+          border-color: var(--rust-button);
+          box-shadow: 0 0 0 2px rgba(232, 108, 43, 0.2);
         }
 
         .context-input:disabled {
-          background-color: #f8f9fa;
+          background-color: #F7E9CB;
           color: #9aa0a6;
           cursor: not-allowed;
         }
 
-        .update-context-button {
-          background-color: #1a73e8;
+        .submit-context-button {
+          background-color: var(--rust-button);
           color: white;
           border: none;
-          border-radius: 4px;
-          padding: 0.4rem 0.8rem;
-          font-size: 0.85rem;
+          border-radius: 8px;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+          font-weight: 500;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.2s;
           white-space: nowrap;
+          box-shadow: 0 2px 4px rgba(232, 108, 43, 0.2);
         }
 
-        .update-context-button:hover {
-          background-color: #1765cc;
+        .submit-context-button:hover {
+          background-color: var(--warm-earth);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(232, 108, 43, 0.3);
         }
 
         .loading-container {

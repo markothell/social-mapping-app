@@ -64,8 +64,8 @@ export default function AdminDashboardPage() {
     <div className="activity-layout">
       <header className="app-header">
         <div className="container">
-          <Link href="/" className="logo">
-            Social Insight Tools
+          <Link href="/" className="logo-link">
+            <img src="/sit_logo.svg" alt="Social Insight Tools" className="header-logo" />
           </Link>
         </div>
       </header>
@@ -84,24 +84,28 @@ export default function AdminDashboardPage() {
             </div>
       
             <div className="filter-controls">
-              <button 
-                className={activeFilter === 'all' ? 'active' : ''}
-                onClick={() => setActiveFilter('all')}
-              >
-                All Activities
-              </button>
-              <button 
-                className={activeFilter === 'active' ? 'active' : ''}
-                onClick={() => setActiveFilter('active')}
-              >
-                Active 
-              </button>
-              <button 
-                className={activeFilter === 'completed' ? 'active' : ''}
-                onClick={() => setActiveFilter('completed')}
-              >
-                Completed
-              </button>
+              <div className="filter-buttons">
+                <button 
+                  className={activeFilter === 'all' ? 'active' : ''}
+                  onClick={() => setActiveFilter('all')}
+                >
+                  All Activities
+                </button>
+                <button 
+                  className={activeFilter === 'active' ? 'active' : ''}
+                  onClick={() => setActiveFilter('active')}
+                >
+                  <span className="color-indicator active-indicator"></span>
+                  Active 
+                </button>
+                <button 
+                  className={activeFilter === 'completed' ? 'active' : ''}
+                  onClick={() => setActiveFilter('completed')}
+                >
+                  <span className="color-indicator completed-indicator"></span>
+                  Completed
+                </button>
+              </div>
             </div>
       
             {loading ? (
@@ -143,11 +147,19 @@ export default function AdminDashboardPage() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+          color: #202124;
+          --warm-earth: #8B7355;
+          --rust-button: #E86C2B;
+          background: linear-gradient(to bottom, #F7E9CB 0%, #D8CD9D 100%);
+          background-attachment: fixed;
+          background-repeat: no-repeat;
         }
         
         .app-header {
-          background-color: #1a73e8;
-          color: white;
+          background-color: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid rgba(232, 196, 160, 0.3);
+          color: #202124;
           padding: 1rem 0;
         }
         
@@ -156,36 +168,62 @@ export default function AdminDashboardPage() {
           margin: 0 auto;
           padding: 0 1rem;
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-start;
           align-items: center;
         }
         
-        .logo {
-          font-size: 1.2rem;
-          font-weight: 500;
-          color: white;
-          text-decoration: none;
+        .logo-link {
+          display: flex;
+          align-items: center;
+          transition: opacity 0.2s ease;
+        }
+        
+        .logo-link:hover {
+          opacity: 0.8;
+        }
+        
+        .header-logo {
+          height: 40px;
+          width: 40px;
+          object-fit: contain;
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: crisp-edges;
         }
         
         
         .app-content {
           flex: 1;
-          background-color: #f8f9fa;
+          background: transparent;
           color: #202124;
           padding: 2rem 0;
         }
         
         .content-wrapper {
-          max-width: 1200px;
+          max-width: 800px;
           margin: 0 auto;
-          padding: 0 2rem;
+          padding: 0 1rem;
         }
         
         .admin-dashboard {
-          background-color: white;
-          border-radius: 8px;
+          background-color: #FDF6E9;
+          border-radius: 12px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-          padding: 2rem;
+          padding: 1.5rem;
+          margin: 0.5rem auto;
+          margin-bottom: 1rem;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          min-height: 0;
+          max-width: 800px;
+          width: 100%;
+        }
+        
+        @media (min-width: 768px) {
+          .admin-dashboard {
+            padding: 2rem;
+          }
         }
 
         .dashboard-header {
@@ -202,7 +240,7 @@ export default function AdminDashboardPage() {
         }
 
         .create-button {
-          background-color: #1a73e8;
+          background-color: #7A403E;
           color: white;
           border: none;
           border-radius: 4px;
@@ -213,34 +251,71 @@ export default function AdminDashboardPage() {
         }
 
         .create-button:hover {
-          background-color: #1765cc;
+          background-color: #6B352F;
         }
 
         .filter-controls {
           display: flex;
-          margin-bottom: 1.5rem;
-          gap: 1rem;
+          justify-content: center;
+          margin-bottom: 2rem;
+          flex-shrink: 0;
         }
 
-        .filter-controls button {
-          background-color: #f1f3f4;
+        .filter-buttons {
+          display: flex;
+          gap: 0.5rem;
+          background-color: #FDF0E1;
+          padding: 0.25rem;
+          border-radius: 25px;
+          border: 1px solid #E8C4A0;
+          width: fit-content;
+        }
+
+        .filter-buttons button {
+          background-color: transparent;
           border: none;
-          border-radius: 4px;
+          border-radius: 20px;
           padding: 0.5rem 1rem;
+          font-size: 0.9rem;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.2s;
+          color: #8B7355;
+          font-weight: 500;
         }
 
-        .filter-controls button.active {
-          background-color: #e8f0fe;
-          color: #1a73e8;
-          font-weight: 500;
+        .filter-buttons button.active {
+          background-color: #D8CD9D;
+          color: #202124;
+        }
+
+        .color-indicator {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .active-indicator {
+          background-color: #F9AB00;
+        }
+
+        .completed-indicator {
+          background-color: #8B4827;
         }
 
         .activity-list {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 1.5rem;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        
+        @media (min-width: 768px) {
+          .activity-list {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+          }
         }
 
         .no-activities {
