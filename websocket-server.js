@@ -28,8 +28,31 @@ const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map(url => url.trim())
   : ["http://localhost:3000"];
 
+console.log('🌐 CORS origins:', allowedOrigins);
+console.log('🔍 Raw CLIENT_URL:', process.env.CLIENT_URL);
+
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    console.log('🔍 Incoming origin:', origin);
+    console.log('🔍 Allowed origins:', allowedOrigins);
+    
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Normalize origins by removing trailing slashes for comparison
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    const normalizedAllowed = allowedOrigins.map(url => url.replace(/\/$/, ''));
+    
+    if (normalizedAllowed.indexOf(normalizedOrigin) !== -1) {
+      console.log('✅ Origin allowed:', origin);
+      callback(null, true);
+    } else {
+      console.log('❌ Origin blocked:', origin);
+      console.log('🔍 Normalized origin:', normalizedOrigin);
+      console.log('🔍 Normalized allowed:', normalizedAllowed);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
