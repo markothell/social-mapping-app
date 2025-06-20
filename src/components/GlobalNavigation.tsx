@@ -3,6 +3,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 interface GlobalNavigationProps {
   sessionId: string;
@@ -22,6 +23,11 @@ export default function GlobalNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
+  const { notifications, getNewTagsCountForUser, markNewTagsSeen, markApprovedTagsSeen } = useNotifications();
+
+  // Get notification counts
+  const newTagsCount = currentUserId ? getNewTagsCountForUser(currentUserId) : 0;
+  const hasApprovedTagsChanged = notifications.approvedTagsChanged;
 
   // Navigation items with their routes and icons
   const navItems = [
@@ -105,8 +111,27 @@ export default function GlobalNavigation({
     }
   };
 
+  // Check if tab should show notification dot
+  const hasNotification = (tabId: string) => {
+    switch (tabId) {
+      case 'nominate':
+        return newTagsCount > 0;
+      case 'map':
+        return hasApprovedTagsChanged;
+      default:
+        return false;
+    }
+  };
+
   const handleNavigation = (route: string, tabId: string) => {
     if (isTabDisabled(tabId)) return;
+    
+    // Mark notifications as seen when navigating to relevant tabs
+    if (tabId === 'nominate' && newTagsCount > 0) {
+      markNewTagsSeen();
+    } else if (tabId === 'map' && hasApprovedTagsChanged) {
+      markApprovedTagsSeen();
+    }
     
     setIsExpanded(false);
     router.push(route);
@@ -119,6 +144,7 @@ export default function GlobalNavigation({
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           const isDisabled = isTabDisabled(item.id);
+          const showNotification = hasNotification(item.id);
           
           return (
             <button
@@ -132,6 +158,7 @@ export default function GlobalNavigation({
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
               {isActive && <div className="active-indicator" />}
+              {showNotification && <div className="notification-dot" />}
             </button>
           );
         })}
@@ -144,6 +171,7 @@ export default function GlobalNavigation({
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               const isDisabled = isTabDisabled(item.id);
+              const showNotification = hasNotification(item.id);
               
               return (
                 <button
@@ -155,6 +183,7 @@ export default function GlobalNavigation({
                 >
                   <span className="tab-icon">{item.icon}</span>
                   <span className="tab-label">{item.label}</span>
+                  {showNotification && <div className="notification-dot" />}
                 </button>
               );
             })}
@@ -238,6 +267,19 @@ export default function GlobalNavigation({
           border-radius: 1px;
         }
         
+        .notification-dot {
+          position: absolute;
+          top: 0.25rem;
+          right: 0.25rem;
+          width: 8px;
+          height: 8px;
+          background: #F5B700;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          z-index: 10;
+        }
+        
         /* Desktop Navigation */
         .desktop-nav {
           display: none;
@@ -312,6 +354,19 @@ export default function GlobalNavigation({
         .tab-label {
           font-size: 0.8rem;
           text-align: center;
+        }
+        
+        .nav-tab .notification-dot {
+          position: absolute;
+          top: 0.5rem;
+          right: 0.5rem;
+          width: 10px;
+          height: 10px;
+          background: #F5B700;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.9);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+          z-index: 10;
         }
         
         .tab-indicator {
