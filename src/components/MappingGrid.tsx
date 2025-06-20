@@ -4,16 +4,10 @@ import { useRef } from 'react';
 import { getTagColor } from '@/utils/tagColorUtils';
 
 interface MappingSettings {
-  xAxisLabel: string;
-  xAxisLeftLabel?: string;
-  xAxisRightLabel?: string;
-  xAxisMinLabel?: string;
-  xAxisMaxLabel?: string;
-  yAxisLabel: string;
-  yAxisTopLabel?: string;
-  yAxisBottomLabel?: string;
-  yAxisMinLabel?: string;
-  yAxisMaxLabel?: string;
+  xAxisMinLabel: string;
+  xAxisMaxLabel: string;
+  yAxisMinLabel: string;
+  yAxisMaxLabel: string;
   gridSize: number;
   enableAnnotations: boolean;
   maxAnnotationLength: number;
@@ -141,11 +135,11 @@ export default function MappingGrid({
     <>
       <div className="mapping-grid-container">
         {/* Top label */}
-        <div className="direction-label top">{settings.yAxisMaxLabel || settings.yAxisTopLabel}</div>
+        <div className="direction-label top">{settings.yAxisMaxLabel}</div>
         
         <div className="grid-row">
           {/* Left label */}
-          <div className="direction-label left">{settings.xAxisMinLabel || settings.xAxisLeftLabel}</div>
+          <div className="direction-label left">{settings.xAxisMinLabel}</div>
           
           {/* Main grid */}
           <div 
@@ -235,11 +229,11 @@ export default function MappingGrid({
           </div>
           
           {/* Right label */}
-          <div className="direction-label right">{settings.xAxisMaxLabel || settings.xAxisRightLabel}</div>
+          <div className="direction-label right">{settings.xAxisMaxLabel}</div>
         </div>
         
         {/* Bottom label */}
-        <div className="direction-label bottom">{settings.yAxisMinLabel || settings.yAxisBottomLabel}</div>
+        <div className="direction-label bottom">{settings.yAxisMinLabel}</div>
       </div>
       
 

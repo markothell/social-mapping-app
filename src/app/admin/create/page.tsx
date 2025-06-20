@@ -59,10 +59,8 @@ export default function CreateActivityPage() {
       },
       mapping: {
         coreQuestion: mappingCoreQuestion,
-        xAxisLabel: 'Knowledge',
         xAxisMinLabel,
         xAxisMaxLabel,
-        yAxisLabel: 'Preference',
         yAxisMinLabel,
         yAxisMaxLabel,
         gridSize: 4,

@@ -446,14 +446,8 @@ export default function MappingPage({
   
   const approvedTags = activity.tags.filter((tag: { status: string }) => tag.status === 'approved');
   const mappingSettings = activity.settings.mapping || {
-    xAxisLabel: 'Knowledge',
-    xAxisLeftLabel: "Don't Know",
-    xAxisRightLabel: 'Know',
     xAxisMinLabel: "Don't Know",
     xAxisMaxLabel: 'Know',
-    yAxisLabel: 'Preference',
-    yAxisTopLabel: 'Like',
-    yAxisBottomLabel: "Don't Like",
     yAxisMinLabel: "Don't Like",
     yAxisMaxLabel: 'Like',
     gridSize: 4,

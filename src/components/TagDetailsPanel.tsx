@@ -175,7 +175,7 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
               <div className="quadrant-grid">
                 <div className="quadrant q2">
                   <div className="quadrant-label">
-                    {mappingSettings.xAxisLeftLabel} / {mappingSettings.yAxisTopLabel}
+                    {mappingSettings.xAxisMinLabel} / {mappingSettings.yAxisMaxLabel}
                     <span className="count">{quadrantStats.q2?.count || 0}</span>
                   </div>
                   <div className="tag-list">
@@ -195,7 +195,7 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
                 </div>
                 <div className="quadrant q1">
                   <div className="quadrant-label">
-                    {mappingSettings.xAxisRightLabel} / {mappingSettings.yAxisTopLabel}
+                    {mappingSettings.xAxisMaxLabel} / {mappingSettings.yAxisMaxLabel}
                     <span className="count">{quadrantStats.q1?.count || 0}</span>
                   </div>
                   <div className="tag-list">
@@ -215,7 +215,7 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
                 </div>
                 <div className="quadrant q3">
                   <div className="quadrant-label">
-                    {mappingSettings.xAxisLeftLabel} / {mappingSettings.yAxisBottomLabel}
+                    {mappingSettings.xAxisMinLabel} / {mappingSettings.yAxisMinLabel}
                     <span className="count">{quadrantStats.q3?.count || 0}</span>
                   </div>
                   <div className="tag-list">
@@ -235,7 +235,7 @@ const TagDetailsPanel = memo(function TagDetailsPanel({
                 </div>
                 <div className="quadrant q4">
                   <div className="quadrant-label">
-                    {mappingSettings.xAxisRightLabel} / {mappingSettings.yAxisBottomLabel}
+                    {mappingSettings.xAxisMaxLabel} / {mappingSettings.yAxisMinLabel}
                     <span className="count">{quadrantStats.q4?.count || 0}</span>
                   </div>
                   <div className="tag-list">

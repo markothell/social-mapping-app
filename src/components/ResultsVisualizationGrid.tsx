@@ -29,12 +29,10 @@ interface Tag {
 
 interface ResultsVisualizationGridProps {
   settings: {
-    xAxisLabel: string;
-    xAxisLeftLabel: string;
-    xAxisRightLabel: string;
-    yAxisLabel: string;
-    yAxisTopLabel: string;
-    yAxisBottomLabel: string;
+    xAxisMinLabel: string;
+    xAxisMaxLabel: string;
+    yAxisMinLabel: string;
+    yAxisMaxLabel: string;
   };
   viewMode: 'aggregate' | 'individual';
   positions: Record<string, Position>;
@@ -92,10 +90,10 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
 
   return (
     <div className="grid-container">
-      <div className="direction-label top">{settings.yAxisTopLabel}</div>
+      <div className="direction-label top">{settings.yAxisMaxLabel}</div>
       
       <div className="grid-row">
-        <div className="direction-label left">{settings.xAxisLeftLabel}</div>
+        <div className="direction-label left">{settings.xAxisMinLabel}</div>
         
         <div className="mapping-grid">
           {/* Red Center Axes */}
@@ -267,10 +265,10 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           )}
         </div>
         
-        <div className="direction-label right">{settings.xAxisRightLabel}</div>
+        <div className="direction-label right">{settings.xAxisMaxLabel}</div>
       </div>
       
-      <div className="direction-label bottom">{settings.yAxisBottomLabel}</div>
+      <div className="direction-label bottom">{settings.yAxisMinLabel}</div>
 
       <style jsx>{`
         .grid-container {

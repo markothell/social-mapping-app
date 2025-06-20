@@ -89,12 +89,10 @@ export interface ActivitySettings {
     topNCount?: number;
   };
   mapping?: {
-    xAxisLabel: string;
-    xAxisLeftLabel: string;
-    xAxisRightLabel: string;
-    yAxisLabel: string;
-    yAxisTopLabel: string;
-    yAxisBottomLabel: string;
+    xAxisMinLabel: string;
+    xAxisMaxLabel: string;
+    yAxisMinLabel: string;
+    yAxisMaxLabel: string;
     gridSize: number;
     enableAnnotations: boolean;
     maxAnnotationLength: number;
@@ -107,7 +105,6 @@ export interface ActivitySettings {
   };
   results?: {
     instruction?: string;
-    requireReciprocalSharing?: boolean;
   };
 }
 
@@ -159,12 +156,10 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
   const mappingSettings = {
     ...commonSettings,
     mapping: {
-      xAxisLabel: 'Knowledge',
-      xAxisLeftLabel: "Don't Know",
-      xAxisRightLabel: 'Know',
-      yAxisLabel: 'Preference',
-      yAxisTopLabel: 'Like',
-      yAxisBottomLabel: "Don't Like",
+      xAxisMinLabel: "Don't Know",
+      xAxisMaxLabel: 'Know',
+      yAxisMinLabel: "Don't Like",
+      yAxisMaxLabel: 'Like',
       gridSize: 4,
       enableAnnotations: true,
       maxAnnotationLength: 280,

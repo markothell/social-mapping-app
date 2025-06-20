@@ -5,10 +5,10 @@ import { useRef, useEffect } from 'react';
 interface HeatmapCanvasProps {
   data: Array<{ x: number; y: number; value: number }>;
   axisLabels: {
-    xAxisLeftLabel: string;
-    xAxisRightLabel: string;
-    yAxisTopLabel: string;
-    yAxisBottomLabel: string;
+    xAxisMinLabel: string;
+    xAxisMaxLabel: string;
+    yAxisMinLabel: string;
+    yAxisMaxLabel: string;
   };
   width?: number;
   height?: number;
@@ -115,12 +115,12 @@ export default function HeatmapCanvas({
     ctx.textAlign = 'center';
     
     // X-axis labels
-    ctx.fillText(axisLabels.xAxisLeftLabel, 50, centerY - 10);
-    ctx.fillText(axisLabels.xAxisRightLabel, canvas.width - 50, centerY - 10);
+    ctx.fillText(axisLabels.xAxisMinLabel, 50, centerY - 10);
+    ctx.fillText(axisLabels.xAxisMaxLabel, canvas.width - 50, centerY - 10);
     
     // Y-axis labels
-    ctx.fillText(axisLabels.yAxisTopLabel, centerX + 10, 20);
-    ctx.fillText(axisLabels.yAxisBottomLabel, centerX + 10, canvas.height - 10);
+    ctx.fillText(axisLabels.yAxisMaxLabel, centerX + 10, 20);
+    ctx.fillText(axisLabels.yAxisMinLabel, centerX + 10, canvas.height - 10);
     
   }, [data, axisLabels, width, height]);
   

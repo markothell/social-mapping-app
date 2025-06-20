@@ -313,12 +313,10 @@ function createDefaultSettingsForType(type: 'mapping' | 'ranking') {
     return {
       ...commonSettings,
       mapping: {
-        xAxisLabel: 'Knowledge',
-        xAxisLeftLabel: "Don't Know",
-        xAxisRightLabel: 'Know',
-        yAxisLabel: 'Preference',
-        yAxisTopLabel: 'Like',
-        yAxisBottomLabel: "Don't Like",
+        xAxisMinLabel: "Don't Know",
+        xAxisMaxLabel: 'Know',
+        yAxisMinLabel: "Don't Like",
+        yAxisMaxLabel: 'Like',
         gridSize: 4,
         enableAnnotations: true,
         maxAnnotationLength: 280

@@ -121,10 +121,8 @@ export default function EditActivityPage() {
         },
         mapping: {
           coreQuestion: mappingCoreQuestion,
-          xAxisLabel: 'Knowledge',
           xAxisMinLabel,
           xAxisMaxLabel,
-          yAxisLabel: 'Preference',
           yAxisMinLabel,
           yAxisMaxLabel,
           gridSize: 4,

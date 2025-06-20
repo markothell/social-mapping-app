@@ -10,12 +10,10 @@ import {
 } from '@/utils/mappingDataUtils';
 
 interface MappingSettings {
-  xAxisLabel: string;
-  xAxisLeftLabel: string;
-  xAxisRightLabel: string;
-  yAxisLabel: string;
-  yAxisTopLabel: string;
-  yAxisBottomLabel: string;
+  xAxisMinLabel: string;
+  xAxisMaxLabel: string;
+  yAxisMinLabel: string;
+  yAxisMaxLabel: string;
   gridSize: number;
   enableAnnotations: boolean;
   maxAnnotationLength: number;
@@ -87,12 +85,10 @@ export default function MappingResultsVisualization({
   
   // Default settings if not provided
   const defaultSettings = {
-    xAxisLabel: 'Knowledge',
-    xAxisLeftLabel: "Don't Know",
-    xAxisRightLabel: 'Know',
-    yAxisLabel: 'Preference',
-    yAxisTopLabel: 'Like',
-    yAxisBottomLabel: "Don't Like",
+    xAxisMinLabel: "Don't Know",
+    xAxisMaxLabel: 'Know',
+    yAxisMinLabel: "Don't Like",
+    yAxisMaxLabel: 'Like',
     gridSize: 4,
     enableAnnotations: true,
     maxAnnotationLength: 280
@@ -280,13 +276,13 @@ export default function MappingResultsVisualization({
     // Determine quadrant
     let quadrant = '';
     if (averageX >= 0.5 && averageY >= 0.5) {
-      quadrant = `${mappingSettings.xAxisRightLabel} / ${mappingSettings.yAxisTopLabel}`;
+      quadrant = `${mappingSettings.xAxisMaxLabel} / ${mappingSettings.yAxisMaxLabel}`;
     } else if (averageX < 0.5 && averageY >= 0.5) {
-      quadrant = `${mappingSettings.xAxisLeftLabel} / ${mappingSettings.yAxisTopLabel}`;
+      quadrant = `${mappingSettings.xAxisMinLabel} / ${mappingSettings.yAxisMaxLabel}`;
     } else if (averageX < 0.5 && averageY < 0.5) {
-      quadrant = `${mappingSettings.xAxisLeftLabel} / ${mappingSettings.yAxisBottomLabel}`;
+      quadrant = `${mappingSettings.xAxisMinLabel} / ${mappingSettings.yAxisMinLabel}`;
     } else {
-      quadrant = `${mappingSettings.xAxisRightLabel} / ${mappingSettings.yAxisBottomLabel}`;
+      quadrant = `${mappingSettings.xAxisMaxLabel} / ${mappingSettings.yAxisMinLabel}`;
     }
     
     // Calculate consensus (inverse of standard deviation)
