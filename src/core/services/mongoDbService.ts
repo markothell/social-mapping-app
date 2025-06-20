@@ -44,12 +44,10 @@ function structureSanitizeForMongoDB(data: any) {
   // Ensure required settings exist based on activity type - use merge instead of replace
   if (sanitized.type === 'mapping') {
     const defaultMapping = {
-      xAxisLabel: 'Knowledge',
-      xAxisLeftLabel: "Don't Know",
-      xAxisRightLabel: 'Know',
-      yAxisLabel: 'Preference',
-      yAxisTopLabel: 'Like',
-      yAxisBottomLabel: "Don't Like",
+      xAxisMinLabel: "Don't Know",
+      xAxisMaxLabel: 'Know',
+      yAxisMinLabel: "Don't Like",
+      yAxisMaxLabel: 'Like',
       gridSize: 4,
       enableAnnotations: true,
       maxAnnotationLength: 280
