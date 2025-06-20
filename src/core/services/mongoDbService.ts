@@ -217,9 +217,11 @@ export const mongoDbService = {
   async updateActivity(id: string, updates: any, retryCount = 0, maxRetries = 3) {
     try {
       console.log(`MongoDB Service: Updating activity ${id} directly (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      console.log(`MongoDB Service: Original updates object:`, JSON.stringify(updates, null, 2));
       
       // Transform dates to strings to avoid transmission issues
       const sanitizedUpdates = structureSanitizeForMongoDB(updates);
+      console.log(`MongoDB Service: Sanitized updates object:`, JSON.stringify(sanitizedUpdates, null, 2));
       
       // Ensure we're only updating fields that are allowed
       const allowedFields = [
@@ -259,9 +261,12 @@ export const mongoDbService = {
       // Add a fresh timestamp to ensure version change
       filteredUpdates['updatedAt'] = new Date().toISOString();
       
+      console.log(`MongoDB Service: Final filtered updates being sent:`, JSON.stringify(filteredUpdates, null, 2));
+      
       // Send update request
       try {
         const response = await axios.patch(`${API_BASE_URL}/activities/${id}`, filteredUpdates);
+        console.log(`MongoDB Service: Update response received:`, JSON.stringify(response.data, null, 2));
         return response.data;
       } catch (error: any) {
         // Handle 404 errors by creating the activity instead
