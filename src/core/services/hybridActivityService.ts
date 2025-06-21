@@ -607,6 +607,10 @@ export const hybridActivityService = {
       };
       
       activity.tags.push(newTag);
+      
+      // Update tag approval status based on threshold configuration
+      this.updateTagApprovalStatus(activity);
+      
       activity.updatedAt = new Date();
       return activity;
     });
@@ -700,12 +704,12 @@ export const hybridActivityService = {
         }
       });
     } else if (thresholdType === 'topN') {
-      // Top N ranked tags (with ties included if they have non-zero votes)
+      // Top N ranked tags (including those with 0 votes)
       const topNCount = tagCreationSettings.topNCount || 5;
       
       // Sort tags by vote count (descending), then by creation time for ties
       const sortedTags = [...activity.tags]
-        .filter(tag => (tag.status === 'pending' || tag.status === 'approved') && tag.votes.length > 0)
+        .filter(tag => tag.status === 'pending' || tag.status === 'approved')
         .sort((a, b) => {
           const votesDiff = b.votes.length - a.votes.length;
           if (votesDiff !== 0) return votesDiff;
@@ -720,22 +724,21 @@ export const hybridActivityService = {
         }
       });
       
-      // Determine the minimum vote count for the Nth position
-      let minVotesForApproval = 0;
+      // Approve the top N tags (including ties at the Nth position)
       if (sortedTags.length > 0 && topNCount > 0) {
         const nthIndex = Math.min(topNCount - 1, sortedTags.length - 1);
-        minVotesForApproval = sortedTags[nthIndex].votes.length;
-      }
-      
-      // Approve all tags that have at least the minimum votes (including ties)
-      sortedTags.forEach(tag => {
-        if (tag.votes.length >= minVotesForApproval && tag.votes.length > 0) {
-          const tagToApprove = activity.tags.find(t => t.id === tag.id);
-          if (tagToApprove) {
-            tagToApprove.status = 'approved';
+        const minVotesForApproval = sortedTags[nthIndex].votes.length;
+        
+        // Approve all tags that have at least the minimum votes (including ties)
+        sortedTags.forEach(tag => {
+          if (tag.votes.length >= minVotesForApproval) {
+            const tagToApprove = activity.tags.find(t => t.id === tag.id);
+            if (tagToApprove) {
+              tagToApprove.status = 'approved';
+            }
           }
-        }
-      });
+        });
+      }
     }
   },
 
