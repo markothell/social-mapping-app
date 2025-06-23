@@ -8,7 +8,7 @@ export default function ActivityNotFound() {
       <div className="error-content">
         <h1>Activity Not Found</h1>
         <p>The activity you're looking for doesn't exist or has been deleted.</p>
-        <Link href="/admin" className="link-button">
+        <Link href="https://socialinsight.tools" className="link-button">
           Go to Dashboard
         </Link>
       </div>

@@ -299,6 +299,22 @@ export default function ActivityPage({
           margin-bottom: 0.5rem;
           font-size: 2rem;
           color: var(--carafe-brown);
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+          line-height: 1.2;
+        }
+        
+        @media (max-width: 768px) {
+          .activity-header h1 {
+            font-size: 1.5rem;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .activity-header h1 {
+            font-size: 1.25rem;
+          }
         }
         
         .activity-description {
