@@ -8,6 +8,7 @@ import {
   calculateStandardDeviations,
   getTagAnnotations
 } from '@/utils/mappingDataUtils';
+import { getTagColor } from '@/utils/tagColorUtils';
 
 interface MappingSettings {
   xAxisMinLabel: string;
@@ -438,6 +439,38 @@ export default function MappingResultsVisualization({
         </div>
       </div>
 
+      {/* Selected tag indicator - always reserve space */}
+      <div className="selected-tag-indicator-container">
+        {selectedTag && (() => {
+          const positionData = positions[selectedTag];
+          const tagColor = getTagColor(positionData?.tagId || selectedTag.split('_')[0]);
+          const tagText = (() => {
+            const [tagId, instanceId] = selectedTag.includes('_') ? selectedTag.split('_') : [selectedTag, undefined];
+            
+            // Get the text from the positions data which has the correct text for instances
+            if (positionData?.text) {
+              return positionData.text;
+            }
+            
+            // Fallback to tags array for base tags
+            const tag = tags.find(t => t.id === tagId);
+            return tag?.text || tagId;
+          })();
+          
+          return (
+            <div 
+              className="selected-tag-indicator-top visible"
+              style={{ 
+                borderColor: tagColor,
+                backgroundColor: `${tagColor}20` // 20 = 12.5% opacity
+              }}
+            >
+              Selected: {tagText}
+            </div>
+          );
+        })()}
+      </div>
+
       <div className="tab-content-container">
         {/* Map Tab Content - Always show map, but make it visible through comments */}
         <div className={`tab-content map-content ${activeContentTab === 'map' || activeContentTab === 'comments' ? 'active' : ''}`}>
@@ -637,8 +670,8 @@ export default function MappingResultsVisualization({
         .tab-navigation {
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
-          margin-bottom: 1.5rem;
+          gap: 0.375rem;
+          margin-bottom: 0.75rem;
           flex-shrink: 0;
         }
 
@@ -705,6 +738,32 @@ export default function MappingResultsVisualization({
           border: 1px solid #dadce0;
           background-color: white;
           font-size: 0.9rem;
+        }
+
+        .selected-tag-indicator-container {
+          height: 30px; /* Reduced height */
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          margin: 0.5rem auto 0.25rem auto;
+          max-width: 680px;
+          width: 100%;
+        }
+
+        .selected-tag-indicator-top {
+          background-color: #e8f0fe;
+          border: 2px solid #1a73e8;
+          border-radius: 4px;
+          padding: 0.4rem 0.6rem;
+          font-size: 0.9rem;
+          text-align: center;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          opacity: 0;
+          transition: opacity 0.2s ease-in-out;
+        }
+
+        .selected-tag-indicator-top.visible {
+          opacity: 1;
         }
 
         /* Tab content container - sized for map */

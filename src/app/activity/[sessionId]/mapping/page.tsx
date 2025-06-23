@@ -11,6 +11,7 @@ import ActivityHeader from '@/components/ActivityHeader';
 import GlobalNavigation from '@/components/GlobalNavigation';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
+import { getTagColor } from '@/utils/tagColorUtils';
 
 interface MappingInstance {
   tagId: string;
@@ -561,6 +562,30 @@ export default function MappingPage({
             </div>
           </div>
 
+          {/* Selected tag indicator - always reserve space */}
+          {activeTab === 'map' && (
+            <div className="selected-tag-indicator-container">
+              {selectedTag && (() => {
+                const selectedTagData = approvedTags.find(t => t.id === selectedTag);
+                if (!selectedTagData) return null;
+                
+                const tagColor = getTagColor(selectedTag);
+                
+                return (
+                  <div 
+                    className="selected-tag-indicator-top visible"
+                    style={{ 
+                      borderColor: tagColor,
+                      backgroundColor: `${tagColor}20` // 20 = 12.5% opacity
+                    }}
+                  >
+                    Click to position: {selectedTagData.text}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Tab content container */}
           <div className="tab-content-container">
             {/* Topics tab content */}
@@ -892,6 +917,32 @@ export default function MappingPage({
         .tab-button:focus {
           outline: 2px solid #8B7355;
           outline-offset: 2px;
+        }
+
+        .selected-tag-indicator-container {
+          height: 30px; /* Reduced height */
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          margin: 0.5rem auto 0.25rem auto;
+          max-width: 680px;
+          width: 100%;
+        }
+
+        .selected-tag-indicator-top {
+          background-color: #e8f0fe;
+          border: 2px solid #1a73e8;
+          border-radius: 4px;
+          padding: 0.4rem 0.6rem;
+          font-size: 0.9rem;
+          text-align: center;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          opacity: 0;
+          transition: opacity 0.2s ease-in-out;
+        }
+
+        .selected-tag-indicator-top.visible {
+          opacity: 1;
         }
 
         /* Tab content container */

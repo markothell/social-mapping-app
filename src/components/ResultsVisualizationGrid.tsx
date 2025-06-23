@@ -233,36 +233,6 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
               </div>
             );
           })}
-            
-          {selectedTag && (
-            <div 
-              className="selected-tag-indicator"
-              style={{ 
-                borderColor: (() => {
-                  const positionData = positions[selectedTag];
-                  return getTagColor(positionData?.tagId || selectedTag.split('_')[0]);
-                })(),
-                backgroundColor: `${(() => {
-                  const positionData = positions[selectedTag];
-                  return getTagColor(positionData?.tagId || selectedTag.split('_')[0]);
-                })()}20` // 20 = 12.5% opacity
-              }}
-            >
-              Selected: {(() => {
-                const [tagId, instanceId] = selectedTag.includes('_') ? selectedTag.split('_') : [selectedTag, undefined];
-                
-                // Get the text from the positions data which has the correct text for instances
-                const positionData = positions[selectedTag];
-                if (positionData?.text) {
-                  return positionData.text;
-                }
-                
-                // Fallback to tags array for base tags
-                const tag = tags.find(t => t.id === tagId);
-                return tag?.text || tagId;
-              })()}
-            </div>
-          )}
         </div>
         
         <div className="direction-label right">{settings.xAxisMaxLabel}</div>
@@ -279,6 +249,10 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           width: 100%;
           max-width: 680px;
           margin: 0 auto;
+          background-color: white;
+          border: 1px solid #dadce0;
+          border-radius: 4px;
+          padding: 0.5rem 1rem;
         }
         
         .grid-row {
@@ -287,7 +261,7 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           justify-content: center;
           width: 100%;
           max-width: 680px;
-          gap: 0.25rem;
+          gap: 0.125rem;
           flex: 0 0 auto;
         }
         
@@ -298,8 +272,6 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           aspect-ratio: 1;
           max-width: 600px;
           max-height: 600px;
-          background-color: white;
-          border: 1px solid #dadce0;
           overflow: visible;
           z-index: 1;
         }
@@ -321,11 +293,55 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           transform: translateY(-50%);
         }
         
+        .center-axis.horizontal::before,
+        .center-axis.horizontal::after {
+          content: '';
+          position: absolute;
+          top: -4px;
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-bottom: 8px solid #000000;
+        }
+        
+        .center-axis.horizontal::before {
+          left: -2px;
+          transform: rotate(-90deg);
+        }
+        
+        .center-axis.horizontal::after {
+          right: -2px;
+          transform: rotate(90deg);
+        }
+        
         .center-axis.vertical {
           height: 100%;
           width: 1px;
           left: 50%;
           transform: translateX(-50%);
+        }
+        
+        .center-axis.vertical::before,
+        .center-axis.vertical::after {
+          content: '';
+          position: absolute;
+          left: -4px;
+          width: 0;
+          height: 0;
+          border-top: 5px solid transparent;
+          border-bottom: 5px solid transparent;
+          border-right: 8px solid #000000;
+        }
+        
+        .center-axis.vertical::before {
+          top: -2px;
+          transform: rotate(90deg);
+        }
+        
+        .center-axis.vertical::after {
+          bottom: -2px;
+          transform: rotate(-90deg);
         }
         
         .direction-label {
@@ -337,13 +353,11 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
         }
         
         .direction-label.top {
-          margin-bottom: 0.5rem;
           width: 100%;
           max-width: 680px;
         }
         
         .direction-label.bottom {
-          margin-top: 0.5rem;
           width: 100%;
           max-width: 680px;
         }
@@ -351,7 +365,7 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
         .direction-label.left {
           writing-mode: vertical-lr;
           text-orientation: mixed;
-          padding-right: 0.25rem;
+          padding-right: 0.125rem;
           width: 20px;
           flex-shrink: 0;
           display: flex;
@@ -363,7 +377,7 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
         .direction-label.right {
           writing-mode: vertical-rl;
           text-orientation: mixed;
-          padding-left: 0.25rem;
+          padding-left: 0.125rem;
           width: 20px;
           flex-shrink: 0;
           display: flex;
@@ -527,18 +541,6 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           white-space: nowrap;
         }
         
-        .selected-tag-indicator {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          background-color: #e8f0fe;
-          border: 2px solid #1a73e8;
-          border-radius: 4px;
-          padding: 0.4rem 0.6rem;
-          font-size: 0.9rem;
-          z-index: 10;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
         
         .participant-name-label {
           position: absolute;
@@ -560,6 +562,14 @@ const ResultsVisualizationGrid = memo(function ResultsVisualizationGrid({
           .direction-label.right {
             font-size: 0.8rem;
             width: 18px;
+          }
+          
+          .direction-label.left {
+            padding-right: 0.1rem;
+          }
+          
+          .direction-label.right {
+            padding-left: 0.1rem;
           }
         }
       `}</style>
