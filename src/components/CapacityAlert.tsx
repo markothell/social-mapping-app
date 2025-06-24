@@ -65,12 +65,11 @@ export default function CapacityAlert() {
               <p className="mt-1 text-sm text-red-700">
                 {capacityInfo.message}
               </p>
-              <div className="mt-2 text-xs text-red-600">
-                Current users: {capacityInfo.currentConnections}/{capacityInfo.maxConnections}
-                {capacityInfo.estimatedWaitTime && (
+              {capacityInfo.estimatedWaitTime && (
+                <div className="mt-2 text-xs text-red-600">
                   <span className="block">Estimated wait: {capacityInfo.estimatedWaitTime}</span>
-                )}
-              </div>
+                </div>
+              )}
               <div className="mt-3">
                 <button
                   onClick={() => window.location.reload()}
@@ -102,9 +101,6 @@ export default function CapacityAlert() {
             <p className="mt-1 text-sm text-yellow-700">
               {capacityInfo.message}
             </p>
-            <div className="mt-2 text-xs text-yellow-600">
-              Current users: {capacityInfo.currentConnections}/{capacityInfo.maxConnections}
-            </div>
             <div className="mt-3">
               <button
                 onClick={() => setCapacityInfo(null)}

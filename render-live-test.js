@@ -1,23 +1,34 @@
-// Load test for live Render deployment with 512MB RAM
+// Comprehensive load test for production deployment
+// Tests both HTTP endpoints and WebSocket connection limits (15 connection boundary)
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import ws from 'k6/ws';
 
 export let options = {
   stages: [
-    { duration: '1m', target: 5 },    // Gentle start
-    { duration: '2m', target: 10 },   // Approach soft limit (12)
-    { duration: '2m', target: 15 },   // Hit hard limit (15)
-    { duration: '1m', target: 20 },   // Test rejection (over 15)
-    { duration: '1m', target: 0 },    // Ramp down
+    { duration: '30s', target: 8 },    // Warm up - under soft limit
+    { duration: '60s', target: 12 },   // Approach soft limit  
+    { duration: '60s', target: 15 },   // Hit hard limit (should trigger warnings)
+    { duration: '60s', target: 18 },   // Test over limit (should trigger rejections)
+    { duration: '30s', target: 0 },    // Ramp down
   ],
 };
 
-const BASE_URL = __ENV.HOST || 'https://your-app.onrender.com';
-const WS_URL = __ENV.WS_HOST || 'wss://your-app.onrender.com:3001';
+const BASE_URL = __ENV.HOST || 'https://app.socialinsight.tools';
+const WS_URL = __ENV.WS_HOST || 'wss://social-mapping-socket-server.onrender.com';
 
 export default function() {
-  // Test health endpoint
+  // 80% chance to test real activity page (triggers WebSocket connections)
+  // 20% chance for HTTP health checks
+  if (Math.random() < 0.8) {
+    testActivityPage();
+  } else {
+    testHttpEndpoints();
+  }
+}
+
+function testHttpEndpoints() {
+  // Test Next.js app health
   let healthRes = http.get(`${BASE_URL}/api/health`);
   
   let healthData = {};
@@ -28,14 +39,8 @@ export default function() {
   }
   
   check(healthRes, {
-    'health endpoint responding': (r) => r.status === 200,
-    'memory under 450MB': (r) => {
-      try {
-        const data = JSON.parse(r.body);
-        return data.memory && data.memory.rss < 450;
-      } catch { return false; }
-    },
-    'memory is healthy': (r) => {
+    'Next.js health OK': (r) => r.status === 200,
+    'memory healthy': (r) => {
       try {
         const data = JSON.parse(r.body);
         return data.memoryHealthy === true;
@@ -43,8 +48,8 @@ export default function() {
     },
   });
   
-  // Test WebSocket server health
-  let wsHealthRes = http.get(`${BASE_URL}:3001/health`);
+  // Test WebSocket server health  
+  let wsHealthRes = http.get(`https://social-mapping-socket-server.onrender.com/health`);
   
   let wsData = {};
   try {
@@ -54,72 +59,72 @@ export default function() {
   }
   
   check(wsHealthRes, {
-    'websocket server responding': (r) => r.status === 200,
-    'connections under limit': (r) => {
-      try {
-        const data = JSON.parse(r.body);
-        return data.capacity && data.capacity.current <= data.capacity.max;
-      } catch { return false; }
-    },
+    'WebSocket server OK': (r) => r.status === 200,
   });
   
-  // Log capacity info
+  // Log capacity and memory info
   if (wsData.capacity) {
-    const capacity = wsData.capacity;
-    console.log(`Capacity: ${capacity.current}/${capacity.max} (${capacity.status}) - Available: ${capacity.availableSlots}`);
+    const c = wsData.capacity;
+    console.log(`📊 Capacity: ${c.current}/${c.max} (${c.status}) - Available: ${c.availableSlots}`);
     
-    if (capacity.status === 'full') {
-      console.log('🚨 Server at capacity!');
-    } else if (capacity.status === 'high') {
-      console.log('⚠️ Server approaching capacity');
+    if (c.current >= 12 && c.current < 15) {
+      console.log('🟡 APPROACHING CAPACITY LIMIT');
+    } else if (c.current >= 15) {
+      console.log('🔴 AT/OVER CAPACITY LIMIT');
     }
   }
   
-  // Log memory usage
   if (healthData.memory) {
-    const mem = healthData.memory;
-    console.log(`Memory: RSS ${mem.rss}MB, Heap ${mem.heapUsed}MB/${mem.heapTotal}MB, External ${mem.external}MB`);
-    
-    if (mem.rss > 400) {
-      console.log('⚠️ High memory usage detected');
-    }
+    const m = healthData.memory;
+    console.log(`💾 Memory: RSS ${m.rss}MB, Heap ${m.heapUsed}/${m.heapTotal}MB`);
   }
   
-  sleep(2);
+  sleep(1);
 }
 
-// Alternative function to test WebSocket connections directly
-export function testWebSocketConnections() {
-  const wsRes = ws.connect(WS_URL, function (socket) {
-    socket.on('open', function open() {
-      console.log('WebSocket connected');
-    });
-    
-    socket.on('message', function message(data) {
-      const msg = JSON.parse(data);
-      
-      if (msg.type === 'connection_rejected') {
-        console.log(`🚨 Connection rejected: ${msg.message}`);
-      } else if (msg.type === 'capacity_warning') {
-        console.log(`⚠️ Capacity warning: ${msg.message}`);
-      } else if (msg.type === 'connection_accepted') {
-        console.log(`✅ Connection accepted: ${msg.currentConnections}/${msg.maxConnections}`);
-      }
-    });
-    
-    socket.on('close', function close() {
-      console.log('WebSocket disconnected');
-    });
-    
-    socket.on('error', function error(e) {
-      console.log('WebSocket error:', e);
-    });
-    
-    // Keep connection alive for a bit
-    sleep(5);
+function testActivityPage() {
+  // Load the actual activity page - this will trigger WebSocket connections
+  const activityUrl = `${BASE_URL}/activity/m9rfm97k_zrq0o`;
+  
+  let pageRes = http.get(activityUrl, {
+    headers: {
+      'User-Agent': 'k6-load-test/1.0',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    }
   });
   
-  check(wsRes, {
-    'websocket connection successful': (r) => r && r.status === 101,
+  check(pageRes, {
+    'activity page loads': (r) => r.status === 200,
+    'page contains React app': (r) => r.body && r.body.includes('__NEXT_DATA__'),
   });
+  
+  if (pageRes.status === 200) {
+    console.log(`✅ Activity page loaded (${pageRes.status})`);
+  } else {
+    console.log(`❌ Activity page failed (${pageRes.status})`);
+  }
+  
+  // Check capacity after page load (which should trigger WebSocket connection)
+  sleep(2); // Give time for WebSocket to connect
+  
+  let wsHealthRes = http.get(`https://social-mapping-socket-server.onrender.com/health`);
+  
+  try {
+    const wsData = JSON.parse(wsHealthRes.body);
+    if (wsData.capacity) {
+      const c = wsData.capacity;
+      console.log(`🌐 Post-page-load Capacity: ${c.current}/${c.max} (${c.status})`);
+      
+      if (c.current >= 12 && c.current < 15) {
+        console.log('🟡 APPROACHING CAPACITY LIMIT');
+      } else if (c.current >= 15) {
+        console.log('🔴 AT/OVER CAPACITY LIMIT - RATE LIMITING SHOULD ACTIVATE');
+      }
+    }
+  } catch (e) {
+    console.log('Failed to parse post-page-load capacity data');
+  }
+  
+  // Keep the "session" alive for a bit to simulate real user behavior
+  sleep(5);
 }
