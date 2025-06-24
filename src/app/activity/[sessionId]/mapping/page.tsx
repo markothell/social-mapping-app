@@ -717,6 +717,9 @@ export default function MappingPage({
                     rows={4}
                     disabled={!selectedTag || isAddingNewInstance || activity.status === 'completed'}
                   />
+                  <div className="character-counter">
+                    {editingContext.length}/{activity.settings?.mapping?.maxAnnotationLength || 280}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1046,6 +1049,14 @@ export default function MappingPage({
           background-color: #F7E9CB;
           color: #9aa0a6;
           cursor: not-allowed;
+        }
+
+        .character-counter {
+          text-align: right;
+          font-size: 0.8rem;
+          color: #5f6368;
+          margin-top: 0.25rem;
+          margin-bottom: 0.5rem;
         }
 
         .submit-context-button {

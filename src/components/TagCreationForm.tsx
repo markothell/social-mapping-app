@@ -46,6 +46,9 @@ export default function TagCreationForm({ onAddTag }: TagCreationFormProps) {
             +
           </button>
         </div>
+        <div className="character-counter">
+          {tagText.length}/100
+        </div>
         {error && <div className="error-message">{error}</div>}
       </form>
 
@@ -100,6 +103,14 @@ export default function TagCreationForm({ onAddTag }: TagCreationFormProps) {
         .add-button:hover {
           background-color: #F29900;
           transform: scale(1.05);
+        }
+        
+        .character-counter {
+          text-align: right;
+          font-size: 0.8rem;
+          color: #5f6368;
+          margin-top: 0.25rem;
+          padding-right: 1rem;
         }
         
         .error-message {

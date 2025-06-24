@@ -29,6 +29,7 @@ export default function TagsPage({
   const [isAdmin, setIsAdmin] = useState(false);
   const [showTagForm, setShowTagForm] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [desktopTagText, setDesktopTagText] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { incrementNewTags, setApprovedTagsChanged } = useNotifications();
   
@@ -237,26 +238,31 @@ export default function TagsPage({
                 type="text"
                 placeholder="Enter Sub-topic"
                 className="add-tag-input"
+                value={desktopTagText}
+                onChange={(e) => setDesktopTagText(e.target.value)}
+                maxLength={100}
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    handleAddTag(e.currentTarget.value.trim());
-                    e.currentTarget.value = '';
+                  if (e.key === 'Enter' && desktopTagText.trim()) {
+                    handleAddTag(desktopTagText.trim());
+                    setDesktopTagText('');
                   }
                 }}
               />
               <button
                 className="add-tag-button"
                 onClick={() => {
-                  const input = document.querySelector('.add-tag-input') as HTMLInputElement;
-                  if (input && input.value.trim()) {
-                    handleAddTag(input.value.trim());
-                    input.value = '';
+                  if (desktopTagText.trim()) {
+                    handleAddTag(desktopTagText.trim());
+                    setDesktopTagText('');
                   }
                 }}
                 aria-label="Add tag"
               >
                 +
               </button>
+            </div>
+            <div className="desktop-character-counter">
+              {desktopTagText.length}/100
             </div>
           </div>
         )}
@@ -338,7 +344,7 @@ export default function TagsPage({
           background-color: #FDF6E9;
           border-radius: 12px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-          padding: 1.5rem;
+          padding: 1.5rem 1.5rem 0.75rem 1.5rem;
           margin: 0.5rem auto;
           margin-bottom: 1rem;
           flex: 1;
@@ -480,6 +486,14 @@ export default function TagsPage({
         .add-tag-button:hover {
           background-color: #d45a21;
           transform: scale(1.05);
+        }
+
+        .desktop-character-counter {
+          text-align: right;
+          font-size: 0.8rem;
+          color: #5f6368;
+          margin-top: 0.25rem;
+          padding-right: 1rem;
         }
 
         .fab {
