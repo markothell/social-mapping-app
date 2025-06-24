@@ -21,8 +21,24 @@ export async function GET() {
 
   const isHealthy = Object.values(healthData.services).every(service => service.status === 'healthy');
   
+  // Environment-specific health thresholds (updated for 512MB Render)
+  const memoryThresholds = {
+    development: { rss: 600, heap: 400 },
+    production: { rss: 450, heap: 350 }  // Conservative for 512MB server
+  };
+  
+  const env = process.env.NODE_ENV || 'development';
+  const thresholds = memoryThresholds[env] || memoryThresholds.development;
+  
+  // Check memory thresholds
+  const memoryHealthy = healthData.memory.rss < thresholds.rss && 
+                       healthData.memory.heapUsed < thresholds.heap;
+  
+  healthData.thresholds = thresholds;
+  healthData.memoryHealthy = memoryHealthy;
+  
   return NextResponse.json(healthData, { 
-    status: isHealthy ? 200 : 503 
+    status: (isHealthy && memoryHealthy) ? 200 : 503 
   });
 }
 
