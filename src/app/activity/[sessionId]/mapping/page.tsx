@@ -198,6 +198,7 @@ export default function MappingPage({
     
     setUserMappings(newUserMappings);
     setSelectedTag(tagId);
+    setSelectedInstanceId(instanceId); // Set the specific instance ID for the new instance
     setIsAddingNewInstance(true);
     setPendingInstanceKey(positionKey);
     setEditingContext(''); // Clear context until positioned
@@ -271,6 +272,9 @@ export default function MappingPage({
       setUserMappings(newUserMappings);
       setIsAddingNewInstance(false);
       setPendingInstanceKey(null);
+      
+      // Keep the new instance selected for context editing
+      // selectedTag and selectedInstanceId should remain set to the new instance
       
       // Enable context editing
       setEditingContext('');
@@ -594,7 +598,10 @@ export default function MappingPage({
                 tags={approvedTags}
                 tagInstances={Object.values(userMappings)
                   .filter((mapping: { tagId: string; isPlaceholder?: boolean }) => 
-                    approvedTags.some(tag => tag.id === mapping.tagId) && !mapping.isPlaceholder
+                    approvedTags.some(tag => tag.id === mapping.tagId) && (
+                      !mapping.isPlaceholder || 
+                      (mapping.isPlaceholder && isAddingNewInstance && selectedTag === mapping.tagId)
+                    )
                   )
                   .map((mapping: { instanceId: string; tagId: string; text: string; annotation?: string }) => ({
                     id: mapping.instanceId || mapping.tagId,
@@ -627,6 +634,7 @@ export default function MappingPage({
                 onSelectTag={activity.status === 'completed' ? () => {} : handleTagSelect}
                 onNavigateToContext={activity.status === 'completed' ? undefined : () => setActiveTab('context')}
                 disabled={activity.status === 'completed'}
+                isAddingNewInstance={isAddingNewInstance}
               />
             </div>
             

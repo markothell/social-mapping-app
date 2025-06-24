@@ -37,6 +37,7 @@ interface MappingGridProps {
   onSelectTag?: (tagId: string | null, instanceId?: string | null) => void;
   onNavigateToContext?: () => void;
   disabled?: boolean;
+  isAddingNewInstance?: boolean;
 }
 
 export default function MappingGrid({
@@ -48,7 +49,8 @@ export default function MappingGrid({
   onPositionTag,
   onSelectTag,
   onNavigateToContext,
-  disabled = false
+  disabled = false,
+  isAddingNewInstance = false
 }: MappingGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   
@@ -162,8 +164,8 @@ export default function MappingGrid({
                 
                 // Check if this positioned tag is selected
                 const isSelected = selectedInstanceId 
-                  ? position.instanceId === selectedInstanceId
-                  : selectedTag?.id === position.tagId;
+                  ? position.instanceId === selectedInstanceId  // Only highlight the specific instance
+                  : (!isAddingNewInstance && selectedTag?.id === position.tagId); // Only highlight all instances if not adding new
                 
                 // Default size and text display
                 const size = 2.5; // Default size in rem
