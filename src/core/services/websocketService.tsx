@@ -593,3 +593,9 @@ export function getSocketInstance(): Socket | null {
 export function useWebSocket() {
   return useContext(WebSocketContext);
 }
+
+// Alias for useSocket
+export function useSocket() {
+  const { socket } = useWebSocket();
+  return socket;
+}
