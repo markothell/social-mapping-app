@@ -44,7 +44,8 @@ export async function GET() {
 
 async function checkDatabaseHealth() {
   try {
-    const response = await fetch(`${process.env.WEBSOCKET_SERVER_URL || 'http://localhost:3001'}/health`);
+    const websocketUrl = process.env.WEBSOCKET_SERVER_URL || 'https://social-mapping-socket-server.onrender.com';
+    const response = await fetch(`${websocketUrl}/health`);
     const data = await response.json();
     
     return {
@@ -62,7 +63,8 @@ async function checkDatabaseHealth() {
 
 async function checkWebSocketHealth() {
   try {
-    const response = await fetch(`${process.env.WEBSOCKET_SERVER_URL || 'http://localhost:3001'}/health`);
+    const websocketUrl = process.env.WEBSOCKET_SERVER_URL || 'https://social-mapping-socket-server.onrender.com';
+    const response = await fetch(`${websocketUrl}/health`);
     const data = await response.json();
     
     return {
