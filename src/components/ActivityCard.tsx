@@ -37,6 +37,85 @@ export default function ActivityCard({
 }: ActivityCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  
+  // Calculate active participants (connected participants)
+  const activeParticipants = activity.participants.filter(p => p.isConnected).length;
+  const totalParticipants = activity.participants.length;
+  
+  // Track activity-specific notifications
+  const [hasUnseenChanges, setHasUnseenChanges] = useState(false);
+  
+  // Check for unseen changes in this activity
+  useEffect(() => {
+    const checkForUpdates = () => {
+      try {
+        const lastSeenKey = `activity_last_seen_${activity.id}`;
+        const lastSeen = localStorage.getItem(lastSeenKey);
+        const activityUpdatedAt = new Date(activity.updatedAt).getTime();
+        
+        if (!lastSeen) {
+          // First time seeing this activity, mark as seen
+          localStorage.setItem(lastSeenKey, activityUpdatedAt.toString());
+          setHasUnseenChanges(false);
+        } else {
+          const lastSeenTime = parseInt(lastSeen);
+          setHasUnseenChanges(activityUpdatedAt > lastSeenTime);
+        }
+      } catch (error) {
+        console.error('Error checking activity updates:', error);
+        setHasUnseenChanges(false);
+      }
+    };
+    
+    checkForUpdates();
+  }, [activity.id, activity.updatedAt]);
+  
+  // Listen for real-time updates for this activity
+  useEffect(() => {
+    const handleActivityUpdate = (event: CustomEvent) => {
+      const detail = event.detail;
+      if (detail.activityId === activity.id) {
+        setHasUnseenChanges(true);
+      }
+    };
+    
+    const handleTagAdded = (event: CustomEvent) => {
+      const detail = event.detail;
+      if (detail.activityId === activity.id) {
+        setHasUnseenChanges(true);
+      }
+    };
+    
+    const handleTagVoted = (event: CustomEvent) => {
+      const detail = event.detail;
+      if (detail.activityId === activity.id) {
+        setHasUnseenChanges(true);
+      }
+    };
+    
+    window.addEventListener('activity_updated', handleActivityUpdate as EventListener);
+    window.addEventListener('tag_added', handleTagAdded as EventListener);
+    window.addEventListener('tag_voted', handleTagVoted as EventListener);
+    
+    return () => {
+      window.removeEventListener('activity_updated', handleActivityUpdate as EventListener);
+      window.removeEventListener('tag_added', handleTagAdded as EventListener);
+      window.removeEventListener('tag_voted', handleTagVoted as EventListener);
+    };
+  }, [activity.id]);
+  
+  // Handler to dismiss notifications
+  const handleDismissNotification = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const lastSeenKey = `activity_last_seen_${activity.id}`;
+      const now = Date.now().toString();
+      localStorage.setItem(lastSeenKey, now);
+      setHasUnseenChanges(false);
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -74,7 +153,16 @@ export default function ActivityCard({
     <div className="activity-card">
       <div className="card-header">
         <h2>
-          <span className={`status-indicator ${activity.status === 'active' ? 'active-status' : activity.status === 'completed' ? 'completed-status' : ''}`}></span>
+          <span className={`status-indicator-container ${hasUnseenChanges ? 'has-notification' : ''}`}>
+            <span className={`status-indicator ${activity.status === 'active' ? 'active-status' : activity.status === 'completed' ? 'completed-status' : ''}`}></span>
+            {hasUnseenChanges && (
+              <span 
+                className="notification-ring clickable" 
+                onClick={handleDismissNotification}
+                title="Click to mark as seen"
+              ></span>
+            )}
+          </span>
           {activity.settings.entryView?.title || 'Untitled Activity'}
         </h2>
         <div className="menu-container" ref={menuRef} onClick={(e) => e.stopPropagation()}>
@@ -116,7 +204,7 @@ export default function ActivityCard({
           <span className="activity-completed">Completed: {formatDate(activity.completedAt)}</span>
         )}
         <span className="activity-participants">
-          {activity.participants.length} participant(s)
+          {activeParticipants}/{totalParticipants} participants
         </span>
       </div>
       
@@ -167,14 +255,45 @@ export default function ActivityCard({
           align-items: center;
         }
 
+        .status-indicator-container {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          margin-right: 12px;
+        }
+
         .status-indicator {
           display: inline-block;
           width: 12px;
           height: 12px;
           border-radius: 50%;
-          margin-right: 12px;
           border: 1px solid rgba(255, 255, 255, 0.3);
           flex-shrink: 0;
+          position: relative;
+          z-index: 2;
+        }
+
+        .notification-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 20px;
+          height: 20px;
+          border: 2px solid #34a853;
+          border-radius: 50%;
+          z-index: 1;
+        }
+
+        .notification-ring.clickable {
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .notification-ring.clickable:hover {
+          border-color: #2d8f3f;
+          background-color: rgba(52, 169, 83, 0.1);
+          transform: translate(-50%, -50%) scale(1.1);
         }
 
         .active-status {
