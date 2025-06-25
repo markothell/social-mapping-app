@@ -87,14 +87,16 @@ export function useActivities(filter: 'all' | 'active' | 'completed' = 'all') {
       }
     };
     
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Also set up a shorter interval for more responsive updates
-    const refreshInterval = setInterval(() => {
-      if (!document.hidden && navigator.onLine) {
+    // Set up focus listener to refresh when returning to browser from another app
+    const handleFocus = () => {
+      if (navigator.onLine) {
+        console.log('Window gained focus, refreshing activities...');
         loadActivities();
       }
-    }, 10000); // Refresh every 10 seconds when tab is visible
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
     
     // Cleanup
     return () => {
@@ -103,7 +105,7 @@ export function useActivities(filter: 'all' | 'active' | 'completed' = 'all') {
       window.removeEventListener('tag_added', handleTagAdded);
       window.removeEventListener('tag_voted', handleTagVoted);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(refreshInterval);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [filter]);
   
