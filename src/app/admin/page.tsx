@@ -160,7 +160,7 @@ export default function AdminDashboardPage() {
           backdrop-filter: blur(10px);
           border-bottom: 1px solid rgba(232, 196, 160, 0.3);
           color: #202124;
-          padding: 1rem 0;
+          padding: 0.75rem 0;
         }
         
         .container {
@@ -176,6 +176,7 @@ export default function AdminDashboardPage() {
           display: flex;
           align-items: center;
           transition: opacity 0.2s ease;
+          align-self: stretch;
         }
         
         .logo-link:hover {
@@ -183,8 +184,8 @@ export default function AdminDashboardPage() {
         }
         
         .header-logo {
-          height: 40px;
-          width: 40px;
+          height: 100%;
+          width: 50px;
           object-fit: contain;
           image-rendering: -webkit-optimize-contrast;
           image-rendering: crisp-edges;

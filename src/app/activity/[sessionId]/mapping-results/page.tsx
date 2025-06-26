@@ -58,6 +58,14 @@ export default function MappingResultsPage({
     }
   }, [sessionId, router]);
 
+  // Set dynamic page title
+  useEffect(() => {
+    if (activity) {
+      const activityTitle = activity.settings?.entryView?.title || activity.settings?.title || 'Activity';
+      document.title = `Social_Map.${activityTitle}`;
+    }
+  }, [activity]);
+
   const handleCompleteActivity = () => {
     // TODO: Implement activity completion
     console.log('Complete activity functionality not implemented');

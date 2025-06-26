@@ -84,6 +84,14 @@ export default function MappingPage({
     }
   }, [sessionId, router]);
   
+  // Set dynamic page title
+  useEffect(() => {
+    if (activity) {
+      const activityTitle = activity.settings?.entryView?.title || activity.settings?.title || 'Activity';
+      document.title = `Social_Map.${activityTitle}`;
+    }
+  }, [activity]);
+  
   // Load user's existing mappings
   useEffect(() => {
     if (activity && user) {

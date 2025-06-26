@@ -62,6 +62,14 @@ export default function ActivityPage({
     offline,
   } = useRealTimeActivity(sessionId, user);
 
+  // Set dynamic page title
+  useEffect(() => {
+    if (activity) {
+      const activityTitle = activity.settings?.entryView?.title || activity.settings?.title || 'Activity';
+      document.title = `Social_Map.${activityTitle}`;
+    }
+  }, [activity]);
+
   const handleSwitchUser = () => {
     setIsSwitchingUser(true);
   };

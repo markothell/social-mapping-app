@@ -8,7 +8,7 @@ import { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Collaborative Activity App',
+  title: 'Social Insight Tools',
   description: 'Real-time collaborative activities for teams and classrooms',
 };
 

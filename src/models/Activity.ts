@@ -129,6 +129,9 @@ export interface Activity {
     allowGuestParticipants: boolean;
     visibility: 'public' | 'unlisted' | 'private';
   };
+  lineage: string[];
+  children: string[];
+  clonedFrom?: string;
 }
 
 export function createDefaultActivity(type: 'mapping' | 'ranking', title: string): Activity {
@@ -194,6 +197,8 @@ export function createDefaultActivity(type: 'mapping' | 'ranking', title: string
       isPublic: true,
       allowGuestParticipants: true,
       visibility: 'public'
-    }
+    },
+    lineage: [],
+    children: []
   };
 }

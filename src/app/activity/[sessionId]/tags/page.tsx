@@ -65,6 +65,14 @@ export default function TagsPage({
     }
   }, [sessionId, router]);
   
+  // Set dynamic page title
+  useEffect(() => {
+    if (activity) {
+      const activityTitle = activity.settings?.entryView?.title || activity.settings?.title || 'Activity';
+      document.title = `Social_Map.${activityTitle}`;
+    }
+  }, [activity]);
+  
   // Function to add a new tag with real-time updates
   const handleAddTag = (tagText: string) => {
     if (!activity || !user) return;
