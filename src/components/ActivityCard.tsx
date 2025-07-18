@@ -7,12 +7,13 @@ import { getActivityUrl } from '@/utils/adminUrls';
 export interface Activity {
   id: string;
   type: string;
-  settings: {
+  settings?: {
     entryView?: {
       title?: string;
     };
   };
   createdAt: Date;
+  updatedAt: Date;
   completedAt?: Date;
   status: string;
   participants: any[];
@@ -163,7 +164,7 @@ export default function ActivityCard({
               ></span>
             )}
           </span>
-          {activity.settings.entryView?.title || 'Untitled Activity'}
+          {activity.settings?.entryView?.title || 'Untitled Activity'}
         </h2>
         <div className="menu-container" ref={menuRef} onClick={(e) => e.stopPropagation()}>
           <button 
